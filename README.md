@@ -29,17 +29,49 @@ It downloads the latest release, checks its SHA-256, puts `sne.exe` in `%LOCALAP
 that folder to your `PATH`, and adds the setup line to your PowerShell profile. Set `SNE_NO_MODIFY_PATH=1`
 or `SNE_NO_PROFILE=1` first to skip either step, or `SNE_VERSION=v0.1.0` to pick a release.
 
-If you prefer a wizard, download `sne-<version>-x64-setup.exe` from the
+If you prefer a wizard, download a setup program from the
 [releases page](https://github.com/sne-sh/sne/releases). It does the same and adds an uninstaller.
-The installer is not code-signed yet, so Windows SmartScreen will ask you to confirm.
+The installers are not code-signed yet, so Windows SmartScreen will ask you to confirm.
+
+| Your Windows | Setup wizard | Portable (unzip and run) |
+|---|---|---|
+| 64-bit (most PCs) | `sne-<version>-x64-setup.exe` | `sne-v<version>-x86_64-pc-windows-msvc.zip` |
+| 32-bit | `sne-<version>-x86-setup.exe` | `sne-v<version>-i686-pc-windows-msvc.zip` |
+| ARM64 | `sne-<version>-arm64-setup.exe` | `sne-v<version>-aarch64-pc-windows-msvc.zip` |
+
+The portable zip holds only `sne.exe`: put it anywhere and add the shell setup line below yourself.
+Node.js stopped publishing 32-bit Windows builds after version 22, so 32-bit Windows can install
+Node 22 and older.
 
 Windows PowerShell 5.1 blocks profile scripts by default. If the setup line does not run, allow local
 scripts once with `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 
 ### Linux and macOS
 
-Download the archive for your platform from the releases page and put `sne` somewhere on your `PATH`, or
-build from source with a recent [Rust toolchain](https://rustup.rs):
+```sh
+curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | sh
+```
+
+It needs no root. It downloads the latest release, checks its SHA-256, puts `sne` in `~/.local/bin` and
+adds the setup lines to your bash, zsh or fish profile. Set `SNE_INSTALL_DIR` to change the folder,
+`SNE_NO_PROFILE=1` to leave your profile alone, or `SNE_VERSION=v0.1.0` to pick a release.
+
+Packages are on the [releases page](https://github.com/sne-sh/sne/releases) too. These install `sne`
+system-wide; add the shell setup line below afterwards.
+
+| System | File | Install with |
+|---|---|---|
+| macOS (Intel and Apple silicon) | `sne-<version>-macos-universal.pkg` | `sudo installer -pkg <file> -target /` |
+| Debian, Ubuntu | `sne_<version>_amd64.deb` / `_arm64.deb` | `sudo dpkg -i <file>` |
+| Fedora, RHEL, openSUSE | `sne-<version>-1.x86_64.rpm` / `.aarch64.rpm` | `sudo rpm -i <file>` |
+| Alpine | `sne_<version>_x86_64.apk` / `_aarch64.apk` | `sudo apk add --allow-untrusted <file>` |
+| Arch | `sne-<version>-1-x86_64.pkg.tar.zst` / `-aarch64` | `sudo pacman -U <file>` |
+| Any (portable) | `sne-v<version>-<target>.tar.gz` | unpack and put `sne` on your `PATH` |
+
+The macOS package is not signed yet: use the command above, or right-click it in Finder and choose Open.
+Every file is listed with its SHA-256 in `SHA256SUMS.txt`.
+
+To build from source instead, use a recent [Rust toolchain](https://rustup.rs):
 
 ```sh
 cargo install --path .
@@ -47,7 +79,8 @@ cargo install --path .
 
 ### Shell setup
 
-The Windows installers do this for PowerShell. For other shells, add one line to your profile:
+`install.ps1`, the Windows setup wizard and `install.sh` do this for you. Otherwise add one line to your
+profile:
 
 
 | Shell | File | Line |

@@ -11,3 +11,5 @@ First version.
 - SHA-256 verification of every download; parallel installs; cached release list.
 - Windows, Linux (glibc and musl) and macOS.
 - Windows installers: a PowerShell one-liner (`install.ps1`) and a setup wizard built with Inno Setup.
+- Windows builds for x64, x86 (32-bit) and ARM64, each as a setup wizard and a portable zip.
+- Linux and macOS: `install.sh`, a universal macOS `.pkg`, and `.deb`, `.rpm`, `.apk` and Arch packages.

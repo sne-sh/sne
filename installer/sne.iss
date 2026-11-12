@@ -2,7 +2,7 @@
 ;
 ; Build from the repository root after `cargo build --release`:
 ;   iscc installer\sne.iss
-; Options:  /DAppVersion=0.1.0  /DArch=arm64  /DSourceExe=path\to\sne.exe
+; Options:  /DAppVersion=0.1.0  /DArch=x64|x86|arm64  /DSourceExe=path\to\sne.exe
 
 #ifndef AppVersion
   #define AppVersion "0.1.0"
@@ -41,6 +41,8 @@ SolidCompression=yes
 #if Arch == "arm64"
 ArchitecturesAllowed=arm64
 ArchitecturesInstallIn64BitMode=arm64
+#elif Arch == "x86"
+; 32-bit build: runs on every Windows, so no architecture limits.
 #else
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible

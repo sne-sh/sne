@@ -1,9 +1,13 @@
 name: Release
 
-# Pushing a tag such as v0.1.0 builds every platform and attaches the archives to a draft release.
+# Pushing a tag such as v0.1.0 runs every check, then builds every installer and attaches them to a
+# draft release. A manual run, or a push to the release-dry-run branch, does the same without creating
+# a release: the files are kept as the "release-files" artifact of the run.
 on:
   push:
     tags: ["v*.*.*"]
+    branches: [release-dry-run]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -12,17 +16,132 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  checks:
+    name: Checks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Tag matches Cargo.toml
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          cargo_version="v$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)"
+          if [[ "$cargo_version" != "$GITHUB_REF_NAME" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match Cargo.toml ($cargo_version)"
+            exit 1
+          fi
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  windows:
     name: ${{ matrix.target }}
+    needs: checks
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { target: x86_64-pc-windows-msvc, os: windows-latest }
-          - { target: aarch64-pc-windows-msvc, os: windows-11-arm }
-          - { target: x86_64-apple-darwin, os: macos-latest }
-          - { target: aarch64-apple-darwin, os: macos-latest }
+          - { target: x86_64-pc-windows-msvc, os: windows-latest, arch: x64 }
+          - { target: i686-pc-windows-msvc, os: windows-latest, arch: x86 }
+          - { target: aarch64-pc-windows-msvc, os: windows-11-arm, arch: arm64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Version
+        shell: bash
+        run: echo "TAG=v$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
+      - run: cargo build --release --target ${{ matrix.target }}
+      - name: Portable zip
+        shell: pwsh
+        run: |
+          $name = "sne-$env:TAG-${{ matrix.target }}"
+          New-Item -ItemType Directory $name | Out-Null
+          Copy-Item README.md, LICENSE, "target\${{ matrix.target }}\release\sne.exe" $name
+          Compress-Archive -Path $name -DestinationPath "$name.zip"
+      - name: Setup wizard
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y }
+          $version = $env:TAG.TrimStart('v')
+          & $iscc "/DAppVersion=$version" "/DArch=${{ matrix.arch }}" "/DSourceExe=..\target\${{ matrix.target }}\release\sne.exe" installer\sne.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item target\installer\*-setup.exe .
+      - name: Try the setup wizard
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem sne-*-setup.exe | Select-Object -First 1
+          $dir = Join-Path $env:RUNNER_TEMP 'sne-wizard-test'
+          $p = Start-Process $setup.FullName -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/TASKS=', "/DIR=$dir" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Setup exited with $($p.ExitCode)" }
+          & "$dir\sne.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw 'The installed sne.exe does not run' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          if-no-files-found: error
+          path: |
+            sne-*.zip
+            sne-*-setup.exe
+
+  macos:
+    name: macOS
+    needs: checks
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+      - name: Version
+        run: echo "TAG=v$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
+      - name: Build and package both processors
+        run: |
+          for target in x86_64-apple-darwin aarch64-apple-darwin; do
+            cargo build --release --target "$target"
+            name="sne-$TAG-$target"
+            mkdir "$name"
+            cp README.md LICENSE "target/$target/release/sne" "$name/"
+            tar -czf "$name.tar.gz" "$name"
+          done
+      - name: Universal installer package
+        run: |
+          mkdir -p pkgroot/usr/local/bin
+          lipo -create -output pkgroot/usr/local/bin/sne \
+            target/x86_64-apple-darwin/release/sne target/aarch64-apple-darwin/release/sne
+          chmod 755 pkgroot/usr/local/bin/sne
+          pkgbuild --root pkgroot --identifier io.github.sne-sh.sne --version "${TAG#v}" \
+            --install-location / "sne-${TAG#v}-macos-universal.pkg"
+      - name: Try the package
+        run: |
+          sudo installer -pkg sne-*-macos-universal.pkg -target /
+          /usr/local/bin/sne --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          if-no-files-found: error
+          path: |
+            sne-*.tar.gz
+            sne-*.pkg
+
+  linux:
+    name: ${{ matrix.target }}
+    needs: checks
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - { target: x86_64-unknown-linux-gnu, os: ubuntu-latest }
           - { target: aarch64-unknown-linux-gnu, os: ubuntu-24.04-arm }
           - { target: x86_64-unknown-linux-musl, os: ubuntu-latest }
@@ -35,50 +154,70 @@ jobs:
       - name: Install musl tools
         if: contains(matrix.target, 'musl')
         run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - name: Version
+        run: echo "TAG=v$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
       - run: cargo build --release --target ${{ matrix.target }}
       - name: Package
-        shell: bash
         run: |
-          name="sne-${{ github.ref_name }}-${{ matrix.target }}"
+          name="sne-$TAG-${{ matrix.target }}"
           mkdir "$name"
-          cp README.md LICENSE "$name/"
-          if [[ "${{ matrix.target }}" == *windows* ]]; then
-            cp "target/${{ matrix.target }}/release/sne.exe" "$name/"
-            7z a "$name.zip" "$name" > /dev/null
-            echo "ASSET=$name.zip" >> "$GITHUB_ENV"
-          else
-            cp "target/${{ matrix.target }}/release/sne" "$name/"
-            tar -czf "$name.tar.gz" "$name"
-            echo "ASSET=$name.tar.gz" >> "$GITHUB_ENV"
-          fi
-      - name: Build Windows installer
-        if: contains(matrix.target, 'windows')
-        shell: pwsh
-        run: |
-          choco install innosetup --no-progress -y
-          $arch = if ('${{ matrix.target }}' -like 'aarch64*') { 'arm64' } else { 'x64' }
-          $version = '${{ github.ref_name }}'.TrimStart('v')
-          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" "/DArch=$arch" "/DSourceExe=..\target\${{ matrix.target }}\release\sne.exe" installer\sne.iss
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Copy-Item target\installer\*-setup.exe .
+          cp README.md LICENSE "target/${{ matrix.target }}/release/sne" "$name/"
+          tar -czf "$name.tar.gz" "$name"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
-          path: |
-            ${{ env.ASSET }}
-            sne-*-setup.exe
+          if-no-files-found: error
+          path: sne-*.tar.gz
 
   publish:
-    needs: build
+    name: Packages and release
+    needs: [windows, macos, linux]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
+      - name: Version
+        run: echo "TAG=v$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
+      - name: Linux packages (deb, rpm, apk, Arch)
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          export VERSION="${TAG#v}"
+          for pair in x86_64:amd64 aarch64:arm64; do
+            cpu="${pair%%:*}"
+            export ARCH="${pair##*:}"
+            # The musl build is fully static, so one binary works on every distribution.
+            export BINARY="work-$ARCH/sne-$TAG-$cpu-unknown-linux-musl/sne"
+            mkdir "work-$ARCH"
+            tar -xzf "dist/sne-$TAG-$cpu-unknown-linux-musl.tar.gz" -C "work-$ARCH"
+            envsubst '$VERSION $ARCH $BINARY' < packaging/nfpm.yaml > "work-$ARCH/nfpm.yaml"
+            for packager in deb rpm apk archlinux; do
+              nfpm package --config "work-$ARCH/nfpm.yaml" --packager "$packager" --target dist/
+            done
+          done
+      - name: Try the deb package and install.sh
+        run: |
+          sudo dpkg -i dist/sne_*_amd64.deb
+          /usr/bin/sne --version
+          sudo dpkg -r sne
+          (cd dist && sha256sum sne* > SHA256SUMS.txt)
+          mkdir served && ln -s "$PWD/dist" "served/$TAG"
+          python3 -m http.server 8766 --bind 127.0.0.1 --directory served &
+          sleep 2
+          SNE_VERSION="$TAG" SNE_DOWNLOAD_BASE=http://127.0.0.1:8766 SNE_INSTALL_DIR="$RUNNER_TEMP/bin" \
+            SNE_NO_PROFILE=1 sh install.sh
+          "$RUNNER_TEMP/bin/sne" --version
       - name: Checksums
-        run: cd dist && sha256sum * > SHA256SUMS.txt
+        run: cd dist && rm -f SHA256SUMS.txt && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-files
+          path: dist/*
       - name: Create draft release
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${{ github.ref_name }}" dist/* --repo "${{ github.repository }}" --draft --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --draft --generate-notes

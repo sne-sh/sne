@@ -22,6 +22,7 @@ function Install-Sne {
     $target = switch ($arch) {
         'AMD64' { 'x86_64-pc-windows-msvc' }
         'ARM64' { 'aarch64-pc-windows-msvc' }
+        'x86' { 'i686-pc-windows-msvc' }
         default { throw "sne has no build for this processor ($arch)." }
     }
 
