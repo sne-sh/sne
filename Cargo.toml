@@ -1,0 +1,35 @@
+[package]
+name = "sne"
+version = "0.1.0"
+edition = "2024"
+description = "Simple Node Environment: a fast, cross-platform Node.js version manager"
+license = "MIT"
+readme = "README.md"
+keywords = ["node", "nodejs", "version-manager", "nvm", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.7", features = ["derive"] }
+clap_complete = "4.6.11"
+indicatif = "0.18.6"
+node-semver = "2.2.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sha2 = "0.11.1"
+ureq = "3.5.1"
+
+[target."cfg(windows)".dependencies]
+junction = "2.1.0"
+zip = { version = "9.5.1", default-features = false, features = ["deflate"] }
+
+[target."cfg(not(windows))".dependencies]
+liblzma = { version = "0.4.9", features = ["static"] }
+tar = "0.4.46"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

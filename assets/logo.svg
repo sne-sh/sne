@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="sne logo">
+  <rect width="1024" height="1024" rx="224" fill="#0B1220"/>
+  <polygon points="512,172 806.4,342 806.4,682 512,852 217.6,682 217.6,342" fill="#22D3EE"/>
+  <polygon points="512,236 751,374 751,650 512,788 273,650 273,374" fill="#0B1220"/>
+  <polygon points="570,290 395,545 505,545 455,735 635,480 522,480" fill="#FACC15"/>
+</svg>
