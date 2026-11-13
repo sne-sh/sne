@@ -226,6 +226,15 @@ fn install_switch_and_uninstall() {
     );
     assert_eq!(env.ok(&root, &["current"]).trim(), "v20.5.0");
 
+    // A version file with terminal escape codes is ignored, so nothing from it is printed.
+    fs::write(root.join("project").join(".nvmrc"), "22\u{1b}]0;owned\u{7}\n").unwrap();
+    let out = env.sne(&project, &["use", "--auto"]);
+    assert!(out.stdout.is_empty() && out.stderr.is_empty(), "{out:?}");
+    let out = env.sne(&project, &["use"]);
+    assert!(!out.status.success());
+    assert!(!String::from_utf8_lossy(&out.stderr).contains('\u{1b}'));
+    fs::write(root.join("project").join(".nvmrc"), "20\n").unwrap();
+
     // Aliases, default, listing.
     env.ok(&root, &["alias", "work", "22"]);
     env.ok(&root, &["default", "20"]);
