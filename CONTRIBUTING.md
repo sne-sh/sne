@@ -156,7 +156,7 @@ Maintainers make releases. For reference, the steps are:
    manifest (`bucket/`), the Homebrew formula (`Formula/`), and the AUR and winget files in
    `packaging/` with the new version and checksums. The Packages workflow then installs sne with each.
 7. Run `node npm/build.mjs <version> --publish` to build the npm packages from the release and publish
-   them: the launcher `sne` and one package per system. It needs `npm login` first.
+   them: the launcher `sne-cli` and one package per system. It needs `npm login` first.
 8. Copy `packaging/aur/PKGBUILD` and `.SRCINFO` to the AUR repository of `sne-bin` and push it. Send
    the folder under `packaging/winget/manifests/` as a pull request to `microsoft/winget-pkgs`.
 

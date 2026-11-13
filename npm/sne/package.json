@@ -1,5 +1,5 @@
 {
-  "name": "sne",
+  "name": "sne-cli",
   "version": "0.0.0",
   "description": "Simple Node Environment: a fast, cross-platform Node.js version manager",
   "bin": {

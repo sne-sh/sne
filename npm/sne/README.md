@@ -1,15 +1,15 @@
-# sne
+# sne-cli
 
 Simple Node Environment: a fast, cross-platform Node.js version manager. It installs Node.js versions
 from nodejs.org and switches between them, per terminal or for every terminal.
 
 ```sh
-npm install -g sne      # or: yarn global add sne, pnpm add -g sne, bun add -g sne
+npm install -g sne-cli      # or: yarn global add sne-cli, pnpm add -g sne-cli, bun add -g sne-cli
 sne install lts
 sne use 22
 ```
 
-This package holds a small launcher. The sne program itself comes from a second package for your
+The command is `sne`. This package holds a small launcher for it. The sne program itself comes from a second package for your
 system, such as `sne-linux-x64` or `sne-win32-x64`, which your package manager picks by itself.
 Nothing is downloaded or run at install time.
 

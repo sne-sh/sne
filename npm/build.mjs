@@ -1,10 +1,10 @@
 // Builds the npm packages for a published sne release into npm/dist/:
 //
-//   sne                 the launcher (npm/sne), with the packages below as optionalDependencies
+//   sne-cli             the launcher (npm/sne), with the packages below as optionalDependencies
 //   sne-<os>-<cpu>      one per system, holding the sne program from the release
 //
 //   node npm/build.mjs 0.1.0-beta.4             build only
-//   node npm/build.mjs 0.1.0-beta.4 --publish   build, then publish all of them to npm
+//   node npm/build.mjs 0.1.0-beta.4 --publish   build, then publish to npm what is not there yet
 //
 // The programs come from the release on GitHub and are checked against its SHA256SUMS.txt, so the
 // release must be published first. Needs Node.js 18 or newer.
@@ -83,6 +83,8 @@ const shared = {
   license: 'MIT',
 };
 const packages = [];
+// npm refuses the name "sne", so the launcher is published as sne-cli. Its command is still `sne`.
+const launcherName = JSON.parse(fs.readFileSync(path.join(here, 'sne', 'package.json'), 'utf8')).name;
 
 for (const system of systems) {
   const name = `sne-${system.os}-${system.cpu}`;
@@ -105,13 +107,14 @@ for (const system of systems) {
   if (system.os !== 'win32') fs.chmodSync(path.join(dir, program), 0o755);
   fs.writeFileSync(
     path.join(dir, 'README.md'),
-    `# ${name}\n\nThe sne program for ${system.label}. Install [sne](https://www.npmjs.com/package/sne) ` +
+    `# ${name}\n\nThe sne program for ${system.label}. Install ` +
+      `[${launcherName}](https://www.npmjs.com/package/${launcherName}) ` +
       `instead: it picks this package by itself.\n`
   );
   writeJson(path.join(dir, 'package.json'), {
     name,
     ...shared,
-    description: `The sne program for ${system.label}. Install the package "sne" instead.`,
+    description: `The sne program for ${system.label}. Install the package "${launcherName}" instead.`,
     // A bin entry makes package managers mark the file as executable, whichever system packed it.
     // Its name differs from "sne", so it never competes with the launcher.
     bin: { [name]: program },
@@ -131,15 +134,21 @@ const manifest = JSON.parse(fs.readFileSync(path.join(launcher, 'package.json'),
 manifest.version = version;
 manifest.optionalDependencies = Object.fromEntries(packages.map((name) => [name, version]));
 writeJson(path.join(launcher, 'package.json'), manifest);
-console.log('built sne');
+console.log(`built ${launcherName}`);
 
 if (publish) {
   // The system packages go first, so the launcher never points at a package that is missing.
   // A beta is published as "latest" too: while there is no stable release, it is what
   // `npm install -g sne` should give.
-  for (const name of [...packages, 'sne']) {
+  // A package that is already on the registry is skipped, so a run that stopped can be repeated.
+  for (const [folder, name] of [...packages.map((p) => [p, p]), ['sne', launcherName]]) {
+    const there = await fetch(`https://registry.npmjs.org/${name}/${version}`);
+    if (there.ok) {
+      console.log(`${name}@${version} is already on npm`);
+      continue;
+    }
     execFileSync('npm', ['publish', '--access', 'public', '--tag', 'latest'], {
-      cwd: path.join(dist, name),
+      cwd: path.join(dist, folder),
       stdio: 'inherit',
       shell: process.platform === 'win32',
     });
