@@ -4,6 +4,7 @@
 
 - Install with Scoop (`scoop bucket add sne https://github.com/sne-sh/sne`) or Homebrew (`brew tap sne-sh/sne https://github.com/sne-sh/sne`).
 - sne is on crates.io: `cargo install sne --version <version>`.
+- sne is on npm as `sne-cli`: `npm install -g sne-cli`, or the same with yarn, pnpm or bun.
 
 ## 0.1.0-beta.4 (2026-11-13)
 

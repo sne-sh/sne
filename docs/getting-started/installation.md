@@ -157,6 +157,28 @@ that: the first `sne install` puts the default Node version on your `PATH`.
 
 To update, run the same command with the new version. `sne update` also works.
 
+## Install with npm, yarn, pnpm or bun
+
+The package is named `sne-cli`. The command it installs is `sne`.
+
+```sh
+npm install -g sne-cli
+```
+
+Or `yarn global add sne-cli`, `pnpm add -g sne-cli`, `bun add -g sne-cli`. The package manager also
+installs a second package with the program for your system, such as `sne-linux-x64`. Nothing is
+downloaded or run at install time.
+
+{% hint style="warning" %}
+A global package belongs to the Node.js version that installed it. If sne manages that version, the
+`sne` command disappears when you switch to another version with `sne use`, until you install the
+package there too. Install it with a Node.js that sne does not manage, or use one of the other methods
+on this page, which do not need Node.js.
+{% endhint %}
+
+This method also starts Node.js before every `sne` command, which makes each one a little slower. It
+does not change your shell profile, so add the [setup line](shell-setup.md) afterwards.
+
 ## Build from source
 
 You need a recent stable [Rust toolchain](https://rustup.rs).

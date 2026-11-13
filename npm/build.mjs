@@ -9,7 +9,7 @@
 // The programs come from the release on GitHub and are checked against its SHA256SUMS.txt, so the
 // release must be published first. Needs Node.js 18 or newer.
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -139,7 +139,7 @@ console.log(`built ${launcherName}`);
 if (publish) {
   // The system packages go first, so the launcher never points at a package that is missing.
   // A beta is published as "latest" too: while there is no stable release, it is what
-  // `npm install -g sne` should give.
+  // `npm install -g sne-cli` should give.
   // A package that is already on the registry is skipped, so a run that stopped can be repeated.
   for (const [folder, name] of [...packages.map((p) => [p, p]), ['sne', launcherName]]) {
     const there = await fetch(`https://registry.npmjs.org/${name}/${version}`);
@@ -147,10 +147,10 @@ if (publish) {
       console.log(`${name}@${version} is already on npm`);
       continue;
     }
-    execFileSync('npm', ['publish', '--access', 'public', '--tag', 'latest'], {
+    // One string, run by the shell: on Windows npm is a .cmd file, which needs one.
+    execSync('npm publish --access public --tag latest', {
       cwd: path.join(dist, folder),
       stdio: 'inherit',
-      shell: process.platform === 'win32',
     });
   }
 } else {

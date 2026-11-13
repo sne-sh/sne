@@ -90,6 +90,15 @@ With a recent [Rust toolchain](https://rustup.rs), you can install from
 cargo install sne --version 0.1.0-beta.4
 ```
 
+With npm, yarn, pnpm or bun, the package is [`sne-cli`](https://www.npmjs.com/package/sne-cli) and the
+command is `sne`. Read the
+[note about switching versions](docs/getting-started/installation.md#install-with-npm-yarn-pnpm-or-bun)
+first:
+
+```sh
+npm install -g sne-cli
+```
+
 Or build from a clone of this repository:
 
 ```sh
