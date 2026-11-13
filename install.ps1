@@ -7,7 +7,19 @@
 #   SNE_INSTALL_DIR     where sne.exe goes (default: %LOCALAPPDATA%\Programs\sne)
 #   SNE_NO_MODIFY_PATH  set to 1 to leave PATH alone
 #   SNE_NO_PROFILE      set to 1 to leave the PowerShell profile alone
-#   SNE_NO_NOTIFY       set to 1 to not be notified when a new sne version is out
+
+# Whether new terminals of this PowerShell (powershell.exe or pwsh.exe) refuse to load a profile.
+# A new process is asked, without the policy this process may have been started with.
+function Test-ProfileBlocked([string]$shell) {
+    $saved = $env:PSExecutionPolicyPreference
+    $env:PSExecutionPolicyPreference = $null
+    try {
+        $policy = & $shell -NoProfile -NonInteractive -Command Get-ExecutionPolicy 2>$null
+        return "$policy".Trim() -in 'Restricted', 'AllSigned'
+    }
+    catch { return $false }
+    finally { $env:PSExecutionPolicyPreference = $saved }
+}
 
 function Install-Sne {
     $ErrorActionPreference = 'Stop'
@@ -60,7 +72,33 @@ function Install-Sne {
     finally {
         Remove-Item -Recurse -Force -LiteralPath $temp -ErrorAction SilentlyContinue
     }
-    Write-Host "Installed $(Join-Path $installDir 'sne.exe')"
+    $sne = Join-Path $installDir 'sne.exe'
+    Write-Host "Installed $sne"
+
+    # Run it once before touching PATH or any profile: Windows can refuse to start a program.
+    try {
+        # Windows PowerShell turns anything a program writes to its error stream into an error.
+        $ErrorActionPreference = 'Continue'
+        & $sne --version 2>$null | Out-Null
+        $ErrorActionPreference = 'Stop'
+        if ($LASTEXITCODE -ne 0) { throw "it started, but stopped with exit code $LASTEXITCODE." }
+    }
+    catch {
+        $ErrorActionPreference = 'Stop'
+        Write-Host ''
+        Write-Host "Windows did not run sne.exe: $($_.Exception.Message.Trim())"
+        if ("$_" -match 'Application Control') {
+            Write-Host ''
+            Write-Host 'This is Smart App Control or an application policy of your organization. It blocks programs'
+            Write-Host 'that are not signed, and sne is not signed yet. sne cannot work on this PC until one of these:'
+            Write-Host '  - Smart App Control is turned off: Windows Security > App & browser control >'
+            Write-Host '    Smart App Control settings. Windows does not let you turn it on again later.'
+            Write-Host '  - Your administrator allows sne.exe, if the policy comes from your organization.'
+        }
+        Write-Host ''
+        Write-Host "sne.exe was left in $installDir. Your PATH and PowerShell profile were not changed."
+        return
+    }
 
     if ($env:SNE_NO_MODIFY_PATH -ne '1') {
         # Two folders go on PATH: sne itself, and the link to the default Node version. With the
@@ -104,6 +142,16 @@ function Install-Sne {
             }
         }
         foreach ($profilePath in ($profiles | Select-Object -Unique)) {
+            # Where the execution policy blocks scripts, a profile only prints an error in every new
+            # terminal. sne works without the line there; only per-terminal switching is missing.
+            $shell = if ($profilePath -like '*\WindowsPowerShell\*') { 'powershell.exe' } else { 'pwsh.exe' }
+            if (Test-ProfileBlocked $shell) {
+                $name = if ($shell -eq 'pwsh.exe') { 'PowerShell 7' } else { 'Windows PowerShell' }
+                Write-Host "$name does not allow profile scripts on this PC, so its profile was left alone."
+                Write-Host '  node and sne work without it. To also switch versions per terminal, run'
+                Write-Host '  Set-ExecutionPolicy -Scope CurrentUser RemoteSigned   and then this installer again.'
+                continue
+            }
             $profileDir = Split-Path -Parent $profilePath
             if (-not (Test-Path -LiteralPath $profileDir)) { New-Item -ItemType Directory -Force -Path $profileDir | Out-Null }
             if (-not ((Test-Path -LiteralPath $profilePath) -and (Select-String -LiteralPath $profilePath -SimpleMatch 'sne env' -Quiet))) {
@@ -112,10 +160,6 @@ function Install-Sne {
             }
         }
     }
-
-    # New version notifications are on unless asked otherwise. `sne notify off` turns them off later.
-    $notify = if ($env:SNE_NO_NOTIFY -eq '1') { 'off' } else { 'on' }
-    try { & (Join-Path $installDir 'sne.exe') notify $notify } catch { Write-Host "Notifications were not changed: $_" }
 
     Write-Host ''
     Write-Host 'Done. Open a new terminal, then run:  sne install lts'

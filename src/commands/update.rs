@@ -306,10 +306,15 @@ fn remember_choice(choice: &str) {
     let _ = fs::write(choice_file(), choice);
 }
 
-/// Notifications are on unless the user says otherwise. Called once the first Node version is
-/// being installed; does nothing in CI, without a desktop, or after the user made a choice.
+/// On Linux and macOS notifications are on unless the user says otherwise. Called once the first
+/// Node version is being installed; does nothing in CI, without a desktop, or after the user made
+/// a choice.
+///
+/// On Windows they are never turned on without being asked. The daily check there is a scheduled
+/// task, and antivirus programs can take a program that registers one by itself for malware:
+/// Windows Defender has removed sne for it.
 pub fn enable_by_default() {
-    if passive_checks_disabled() || choice_file().exists() || !os::has_desktop() {
+    if cfg!(windows) || passive_checks_disabled() || choice_file().exists() || !os::has_desktop() {
         return;
     }
     let Ok(exe) = std::env::current_exe() else { return };
@@ -328,6 +333,12 @@ pub fn notify_on() -> Result<()> {
     os::enable(&exe)?;
     remember_choice("on");
     println!("Notifications are on: sne checks once a day and tells you when a new version is out.");
+    if cfg!(windows) {
+        println!(
+            "This added a task named \"sne update check\" to Task Scheduler. If your antivirus \
+             asks about it, that task is the reason."
+        );
+    }
     println!("Turn them off with `sne notify off`.");
     Ok(())
 }

@@ -51,7 +51,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 [Tasks]
 Name: "addtopath"; Description: "Add sne and Node.js to PATH (needed to run them from any terminal)"
 Name: "psprofile"; Description: "Set up PowerShell: switch Node versions automatically (adds one line to your profile)"
-Name: "notify"; Description: "Tell me when a new version of sne is available (checks once a day)"
+Name: "notify"; Description: "Tell me when a new version of sne is available (adds a daily task to Task Scheduler)"; Flags: unchecked
 
 [Files]
 Source: "{#SourceExe}"; DestDir: "{app}"; Flags: ignoreversion

@@ -36,11 +36,40 @@ terminal its own version, add the [setup line](../getting-started/shell-setup.md
 
 ## PowerShell says running scripts is disabled
 
-Windows PowerShell 5.1 blocks profile scripts by default. Allow local scripts once:
+Windows PowerShell 5.1 blocks profile scripts by default, so it cannot load the setup line. `node` and
+`sne` still work; only switching versions per terminal is missing. `install.ps1` and the setup wizard
+leave the profile alone when they see this. To allow local scripts:
 
 ```powershell
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
+
+Then run the installer again, or add the [setup line](../getting-started/shell-setup.md) yourself.
+
+## "An Application Control policy has blocked this file"
+
+Smart App Control, or a policy of your organization, refuses to run `sne.exe` because sne is not
+code-signed yet. There is no "Run anyway" for this, and sne cannot work on that PC until one of these
+changes:
+
+* Smart App Control is turned off: **Windows Security**, **App & browser control**, **Smart App Control
+  settings**. Windows does not let you turn it on again without reinstalling.
+* Your administrator allows `sne.exe`, when the policy comes from your organization.
+
+`install.ps1` checks this before it changes your `PATH` or profile.
+
+## Windows Defender removed sne
+
+Windows Defender can report `Behavior:Win32/Persistence` and delete `sne.exe`. It reacts to an unsigned
+program that adds a scheduled task, which is what `sne notify on` does for the daily update check.
+sne never adds that task without being asked.
+
+1. Open **Windows Security**, **Virus & threat protection**, **Protection history**.
+2. Open the entry, choose **Actions**, then **Restore**.
+3. Run `sne notify off` if you prefer to be safe. `sne install` still tells you about new versions.
+
+Please also [open an issue](https://github.com/sne-sh/sne/issues), so the false alarm can be reported
+to Microsoft.
 
 ## Another Node.js is used instead of the one from sne
 

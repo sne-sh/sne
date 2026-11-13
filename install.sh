@@ -106,6 +106,10 @@ main() {
     mv -f "$install_dir/.sne.new" "$install_dir/sne"
     echo "Installed $install_dir/sne"
 
+    # Run it once before touching any profile: the system can refuse to start a program.
+    "$install_dir/sne" --version >/dev/null 2>&1 ||
+        fail "sne was installed but does not run on this system. Your shell profile was not changed. Try: $install_dir/sne --version"
+
     if [ "${SNE_NO_PROFILE:-0}" != "1" ]; then
         posix_block="# sne (Node.js version manager)
 if [ -x \"$install_dir/sne\" ]; then

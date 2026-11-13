@@ -15,9 +15,12 @@ irm https://raw.githubusercontent.com/sne-sh/sne/main/install.ps1 | iex
 The script:
 
 1. Downloads the latest release for your processor and checks its SHA-256.
-2. Puts `sne.exe` in `%LOCALAPPDATA%\Programs\sne`.
+2. Puts `sne.exe` in `%LOCALAPPDATA%\Programs\sne` and runs it once. If Windows refuses to run it, the
+   script says why and changes nothing else.
 3. Adds that folder to your user `PATH`.
-4. Adds the [setup line](shell-setup.md) to your PowerShell profile.
+4. Adds the [setup line](shell-setup.md) to your PowerShell profile, unless the PowerShell
+   [execution policy](../help/troubleshooting.md#powershell-says-running-scripts-is-disabled) would
+   refuse to load it.
 
 Set these before running it to change what it does:
 
@@ -27,7 +30,6 @@ Set these before running it to change what it does:
 | `SNE_INSTALL_DIR` | Put `sne.exe` in this folder |
 | `SNE_NO_MODIFY_PATH=1` | Leave `PATH` alone |
 | `SNE_NO_PROFILE=1` | Leave the PowerShell profile alone |
-| `SNE_NO_NOTIFY=1` | Do not turn on [new version notifications](../guides/notifications.md) |
 
 ```powershell
 $env:SNE_NO_PROFILE = '1'
