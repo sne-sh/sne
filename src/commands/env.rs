@@ -26,7 +26,12 @@ pub fn run(shell: Option<Shell>, use_on_cd: bool) -> Result<()> {
     {
         link::create(&dirs::bin_dir(version), &link)?;
     }
-    print!("{}", shell.setup(&link, use_on_cd));
+    // The hook calls this program directly, which skips a launcher such as npm's on every `cd`.
+    let sne = std::env::current_exe().ok().map(|exe| {
+        let text = exe.to_string_lossy().into_owned();
+        PathBuf::from(text.strip_prefix(r"\\?\").unwrap_or(&text))
+    });
+    print!("{}", shell.setup(&link, use_on_cd, sne.as_deref()));
     Ok(())
 }
 

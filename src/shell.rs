@@ -33,8 +33,13 @@ impl Shell {
         }
     }
 
-    /// The code that puts `link` on `PATH` and remembers it in `SNE_SHELL_LINK`.
-    pub fn setup(self, link: &Path, use_on_cd: bool) -> String {
+    /// The code that puts `link` on `PATH` and remembers it in `SNE_SHELL_LINK`. With `use_on_cd`,
+    /// also a hook that runs `sne use --auto` when the folder changes.
+    ///
+    /// The hook runs the program at `sne` directly. Found through `PATH`, `sne` may be a launcher
+    /// (npm's starts Node.js first, Scoop's is a shim) that makes every `cd` several times slower.
+    /// If that file is gone, as after an upgrade by Homebrew, the hook falls back to `sne`.
+    pub fn setup(self, link: &Path, use_on_cd: bool, sne: Option<&Path>) -> String {
         let native = link.to_string_lossy().into_owned();
         // POSIX shells on Windows (Git Bash, MSYS2) need `/c/...` style entries in PATH.
         let posix = if cfg!(windows) {
@@ -62,9 +67,46 @@ impl Shell {
             Shell::Cmd => format!("SET \"SNE_SHELL_LINK={native}\"\nSET \"PATH={native};%PATH%\"\n"),
         };
         if use_on_cd {
+            out.push_str(&self.auto_command(sne));
             out.push_str(self.cd_hook());
         }
         out
+    }
+
+    /// Defines `__sne_auto`, which the hook calls: the program at `sne` when it still exists,
+    /// otherwise whatever `sne` is on `PATH`.
+    fn auto_command(self, sne: Option<&Path>) -> String {
+        let Some(sne) = sne.map(|p| p.to_string_lossy().into_owned()) else {
+            return match self {
+                Shell::Bash | Shell::Zsh => "__sne_auto() { sne use --auto; }\n".to_string(),
+                Shell::Fish => "function __sne_auto\n  sne use --auto\nend\n".to_string(),
+                Shell::PowerShell => "function global:__sne_auto { sne use --auto }\n".to_string(),
+                Shell::Cmd => String::new(),
+            };
+        };
+        match self {
+            Shell::Bash | Shell::Zsh | Shell::Fish => {
+                let quoted = single_quote(&if cfg!(windows) { to_posix(&sne) } else { sne });
+                if self == Shell::Fish {
+                    format!(
+                        "function __sne_auto\n  if test -x {quoted}\n    {quoted} use --auto\n  else\n    \
+                         sne use --auto\n  end\nend\n"
+                    )
+                } else {
+                    format!(
+                        "__sne_auto() {{ if [ -x {quoted} ]; then {quoted} use --auto; else sne use --auto; fi; }}\n"
+                    )
+                }
+            }
+            Shell::PowerShell => {
+                let quoted = format!("'{}'", sne.replace('\'', "''"));
+                format!(
+                    "function global:__sne_auto {{ if (Test-Path -LiteralPath {quoted}) {{ & {quoted} use --auto }} \
+                     else {{ sne use --auto }} }}\n"
+                )
+            }
+            Shell::Cmd => String::new(),
+        }
     }
 
     fn cd_hook(self) -> &'static str {
@@ -73,7 +115,7 @@ impl Shell {
                 "__sne_hook() {\n",
                 "  if [ \"$PWD\" != \"${__SNE_LAST_PWD-}\" ]; then\n",
                 "    __SNE_LAST_PWD=\"$PWD\"\n",
-                "    sne use --auto\n",
+                "    __sne_auto\n",
                 "  fi\n",
                 "}\n",
                 "case \";${PROMPT_COMMAND-};\" in\n",
@@ -82,14 +124,14 @@ impl Shell {
                 "esac\n",
             ),
             Shell::Zsh => concat!(
-                "__sne_hook() { sne use --auto; }\n",
+                "__sne_hook() { __sne_auto; }\n",
                 "autoload -U add-zsh-hook\n",
                 "add-zsh-hook chpwd __sne_hook\n",
                 "__sne_hook\n",
             ),
             Shell::Fish => concat!(
                 "function __sne_hook --on-variable PWD\n",
-                "  sne use --auto\n",
+                "  __sne_auto\n",
                 "end\n",
                 "__sne_hook\n",
             ),
@@ -97,10 +139,10 @@ impl Shell {
                 "function global:Set-LocationWithSne {\n",
                 "  param($path)\n",
                 "  if ($null -eq $path) { Set-Location } else { Set-Location $path }\n",
-                "  sne use --auto\n",
+                "  __sne_auto\n",
                 "}\n",
                 "Set-Alias -Name cd -Value Set-LocationWithSne -Option AllScope -Scope Global -Force\n",
-                "sne use --auto\n",
+                "__sne_auto\n",
             ),
             // cmd.exe has no hook that runs when the directory changes.
             Shell::Cmd => "",
@@ -141,18 +183,53 @@ mod tests {
     fn cmd_lines_survive_special_characters() {
         let link = r"C:\Users\R&D team\sne\shells\1";
         assert_eq!(
-            Shell::Cmd.setup(Path::new(link), false),
+            Shell::Cmd.setup(Path::new(link), false, None),
             format!("SET \"SNE_SHELL_LINK={link}\"\nSET \"PATH={link};%PATH%\"\n")
         );
     }
 
     #[test]
-    fn hook_is_only_added_on_request() {
+    fn hook_calls_the_program_directly_with_a_fallback() {
         let link = Path::new("/tmp/sne/shells/1");
-        assert!(!Shell::Zsh.setup(link, false).contains("add-zsh-hook"));
+        let sne = Path::new("/opt/it's here/sne");
+
+        let bash = Shell::Bash.setup(link, true, Some(sne));
+        assert!(
+            bash.contains(
+                r"__sne_auto() { if [ -x '/opt/it'\''s here/sne' ]; then '/opt/it'\''s here/sne' use --auto; else sne use --auto; fi; }"
+            ),
+            "{bash}"
+        );
+        assert!(bash.contains("    __sne_auto\n"), "{bash}");
+
+        let fish = Shell::Fish.setup(link, true, Some(sne));
+        assert!(fish.contains("  if test -x '/opt/it'\\''s here/sne'\n"), "{fish}");
+
+        let pwsh = Shell::PowerShell.setup(link, true, Some(Path::new(r"C:\Users\O'Neil\sne.exe")));
+        assert!(
+            pwsh.contains(
+                r"function global:__sne_auto { if (Test-Path -LiteralPath 'C:\Users\O''Neil\sne.exe') { & 'C:\Users\O''Neil\sne.exe' use --auto } else { sne use --auto } }"
+            ),
+            "{pwsh}"
+        );
+
+        // Without a known program, and in cmd, which has no hook.
         assert!(
             Shell::Zsh
-                .setup(link, true)
+                .setup(link, true, None)
+                .contains("__sne_auto() { sne use --auto; }")
+        );
+        assert!(!Shell::Cmd.setup(link, true, Some(sne)).contains("__sne_auto"));
+        assert!(!Shell::Bash.setup(link, false, Some(sne)).contains("__sne_auto"));
+    }
+
+    #[test]
+    fn hook_is_only_added_on_request() {
+        let link = Path::new("/tmp/sne/shells/1");
+        assert!(!Shell::Zsh.setup(link, false, None).contains("add-zsh-hook"));
+        assert!(
+            Shell::Zsh
+                .setup(link, true, None)
                 .contains("add-zsh-hook chpwd __sne_hook")
         );
     }
