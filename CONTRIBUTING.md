@@ -149,18 +149,40 @@ Maintainers make releases. For reference, the steps are:
 2. Push a tag equal to that version, without a `v`: `0.2.0` or `0.2.0-beta.1`.
 3. The Release workflow runs every check, builds the installers for every system and creates a draft
    release.
-4. Review the draft on GitHub and publish it.
-5. From the tagged commit, run `cargo publish --dry-run`, then `cargo publish`, to put the version on
-   crates.io. A published version cannot be changed.
-6. Run `pwsh packaging/update-manifests.ps1 <version>` and commit the result. It rewrites the Scoop
-   manifest (`bucket/`), the Homebrew formula (`Formula/`), and the AUR and winget files in
-   `packaging/` with the new version and checksums. The Packages workflow then installs sne with each.
-7. Run `node npm/build.mjs <version> --publish` to build the npm packages from the release and publish
-   them: the launcher `sne-cli` and one package per system. It needs `npm login` first.
-8. Copy `packaging/aur/PKGBUILD` and `.SRCINFO` to the AUR repository of `sne-bin` and push it. Send
+4. Review the draft on GitHub and publish it. This starts the Publish workflow, which:
+   * publishes the crate to crates.io and the eight npm packages (the launcher `sne-cli` and one
+     package per system), if trusted publishing is set up (below);
+   * opens a pull request to `develop` with the Scoop manifest (`bucket/`), the Homebrew formula
+     (`Formula/`), and the AUR and winget files (`packaging/`) for the new version, and starts CI and
+     the Packages workflow on it. Merge it, then bring `develop` to `main`: Scoop and Homebrew read
+     `main`.
+5. Copy `packaging/aur/PKGBUILD` and `.SRCINFO` to the AUR repository of `sne-bin` and push it. Send
    the folder under `packaging/winget/manifests/` as a pull request to `microsoft/winget-pkgs`.
 
+A published version cannot be changed on crates.io or npm.
+
 To test the release build without releasing, push to the `release-dry-run` branch.
+
+### Setting up trusted publishing
+
+The Publish workflow holds no registry token. crates.io and npm instead check that the request comes
+from `publish.yml` in `sne-sh/sne`, and give it a token that expires within 30 minutes. A maintainer
+sets this up once:
+
+1. **crates.io:** on the crate page of `sne`, **Settings**, **Trusted Publishing**, **Add**, GitHub:
+   owner `sne-sh`, repository `sne`, workflow `publish.yml`, environment `release`.
+2. **npm:** for each of the eight packages (`sne-cli` and the seven `sne-<system>-<cpu>`), **Settings**,
+   **Trusted publishing**, GitHub Actions, with the same four values, and allow `npm publish`. npm drops
+   a configuration that has not published within two days, so do this shortly before a release.
+3. **GitHub:** in **Settings**, **Secrets and variables**, **Actions**, **Variables**, set
+   `PUBLISH_CRATES` and `PUBLISH_NPM` to `true`. A job whose variable is not `true` is skipped.
+4. **GitHub:** in **Settings**, **Actions**, **General**, allow GitHub Actions to create pull requests.
+   Optionally, in **Settings**, **Environments**, `release`, add yourself as a required reviewer, so
+   each publish waits for your approval.
+
+Until then, publish by hand from the tagged commit: `cargo publish`, then
+`node npm/build.mjs <version> --publish` after `npm login`, and
+`pwsh packaging/update-manifests.ps1 <version>` for the manifests.
 
 ## Conduct
 

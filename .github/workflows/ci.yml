@@ -4,6 +4,8 @@ on:
   push:
     branches: [main, develop]
   pull_request:
+  # The Publish workflow starts it on the branch with new package manager files.
+  workflow_dispatch:
 
 # The workflow token can only read the repository unless a job asks for more.
 permissions:

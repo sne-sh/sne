@@ -1,0 +1,121 @@
+name: Publish
+
+# Runs when a maintainer publishes a release on GitHub (the Release workflow only makes a draft).
+#
+#   crates.io and npm   Published with trusted publishing: each registry checks that this workflow
+#                       in this repository asked, and hands out a token that expires within
+#                       30 minutes. No token is stored in this repository.
+#   Manifests           Scoop, Homebrew, AUR and winget files are rewritten for the new release and
+#                       proposed as a pull request to develop.
+#
+# Each registry job runs only once its repository variable is set to true (Settings, Secrets and
+# variables, Actions, Variables): PUBLISH_CRATES and PUBLISH_NPM. See CONTRIBUTING.md.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish, for example 0.1.0-beta.5
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+jobs:
+  crates:
+    name: crates.io
+    if: vars.PUBLISH_CRATES == 'true'
+    runs-on: ubuntu-latest
+    # Protection rules on this environment (Settings, Environments) can require a person to approve
+    # each publish.
+    environment: release
+    permissions:
+      contents: read
+      id-token: write   # proves to crates.io which workflow is asking
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+      - name: Already published?
+        id: check
+        run: |
+          code="$(curl -s -o /dev/null -w '%{http_code}' -A 'sne release workflow' \
+            "https://crates.io/api/v1/crates/sne/$TAG")"
+          if [ "$code" = 200 ]; then
+            echo "::notice title=crates.io::sne $TAG is already on crates.io"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+        if: steps.check.outputs.skip != 'true'
+        id: auth
+      - name: Publish
+        if: steps.check.outputs.skip != 'true'
+        run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+
+  npm:
+    name: npm
+    if: vars.PUBLISH_NPM == 'true'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write   # proves to npm which workflow is asking, and signs the provenance
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+      # Builds the packages from the files of the published release, checking each one against
+      # its SHA256SUMS.txt, and publishes those that are not on npm yet. npm adds provenance.
+      - name: Build and publish
+        run: |
+          npm --version
+          node npm/build.mjs "$TAG" --publish
+
+  manifests:
+    name: Package manager files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # push the branch
+      pull-requests: write   # open the pull request
+      actions: write         # start CI on it (pushes by this workflow do not start other workflows)
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: develop
+      - name: Write the manifests
+        shell: pwsh
+        run: ./packaging/update-manifests.ps1 $env:TAG
+      - name: Open a pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+            echo "::notice title=Manifests::already up to date for $TAG"
+            exit 0
+          fi
+          branch="manifests/$TAG"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          git add bucket Formula packaging/aur packaging/winget
+          git commit -m "Update the package manager files for $TAG"
+          git push --force origin "$branch"
+          gh pr create --base develop --head "$branch" \
+            --title "Package manager files for $TAG" \
+            --body "Written by the Publish workflow for release $TAG. Merging this updates Scoop and Homebrew once develop reaches main. The AUR and winget files still have to be submitted by hand; see CONTRIBUTING.md." \
+            || echo "::warning title=Manifests::could not open the pull request. Allow it in Settings, Actions, General: 'Allow GitHub Actions to create and approve pull requests'. The branch $branch is pushed."
+          gh workflow run ci.yml --ref "$branch"
+          gh workflow run packages.yml --ref "$branch"
