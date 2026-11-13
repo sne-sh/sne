@@ -698,7 +698,8 @@ mod os {
             dir.join(format!("{UNIT}.service")),
             format!(
                 "[Unit]\nDescription=Check for a new version of sne\n\n[Service]\nType=oneshot\nExecStart=\"{}\" self check --notify\n",
-                exe.display()
+                // systemd reads `%` as the start of a specifier.
+                exe.display().to_string().replace('%', "%%")
             ),
         )?;
         fs::write(

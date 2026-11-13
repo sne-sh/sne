@@ -153,7 +153,8 @@ fn install_switch_and_uninstall() {
         format!("[{}]", index.join(",")).into_bytes(),
     );
 
-    let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("e2e-{}", std::process::id()));
+    // A space and a letter outside ASCII, as in many user folder names.
+    let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("e2e señor {}", std::process::id()));
     let _ = fs::remove_dir_all(&root);
     let project = root.join("project").join("nested");
     fs::create_dir_all(&project).unwrap();

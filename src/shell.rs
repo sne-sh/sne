@@ -58,7 +58,8 @@ impl Shell {
                 let sep = if cfg!(windows) { ';' } else { ':' };
                 format!("$env:SNE_SHELL_LINK = '{quoted}'\n$env:PATH = '{quoted}{sep}' + $env:PATH\n")
             }
-            Shell::Cmd => format!("SET SNE_SHELL_LINK={native}\nSET PATH={native};%PATH%\n"),
+            // The quotes keep `&` and other special characters in a folder name from being run.
+            Shell::Cmd => format!("SET \"SNE_SHELL_LINK={native}\"\nSET \"PATH={native};%PATH%\"\n"),
         };
         if use_on_cd {
             out.push_str(self.cd_hook());
@@ -134,6 +135,15 @@ mod tests {
     #[test]
     fn quotes_single_quotes() {
         assert_eq!(single_quote("it's"), r"'it'\''s'");
+    }
+
+    #[test]
+    fn cmd_lines_survive_special_characters() {
+        let link = r"C:\Users\R&D team\sne\shells\1";
+        assert_eq!(
+            Shell::Cmd.setup(Path::new(link), false),
+            format!("SET \"SNE_SHELL_LINK={link}\"\nSET \"PATH={link};%PATH%\"\n")
+        );
     }
 
     #[test]
