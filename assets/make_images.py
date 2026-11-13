@@ -76,6 +76,9 @@ def main() -> None:
     INSTALLER.mkdir(exist_ok=True)
     logo(1024).save(ASSETS / "logo-1024.png")
     logo(512).save(ASSETS / "logo-512.png")
+    # Shown on the first page of the GitBook documentation.
+    (ROOT / "docs" / ".gitbook" / "assets").mkdir(parents=True, exist_ok=True)
+    logo(512).save(ROOT / "docs" / ".gitbook" / "assets" / "logo.png")
     # Square, no transparent corners: GitHub crops organisation avatars itself.
     logo(500, rounded=False).convert("RGB").save(ASSETS / "avatar-500.png")
     logo(256).save(ASSETS / "sne.ico", sizes=[(s, s) for s in (16, 24, 32, 48, 64, 128, 256)])

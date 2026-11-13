@@ -1,5 +1,7 @@
 # Welcome
 
+<figure><img src=".gitbook/assets/logo.png" alt="sne logo" width="120"><figcaption></figcaption></figure>
+
 **sne** (Simple Node Environment, say "snee") installs Node.js versions and switches between them. It
 runs on Windows, Linux and macOS.
 
