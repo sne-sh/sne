@@ -23,10 +23,11 @@ Set these before running it to change what it does:
 
 | Variable | Effect |
 |---|---|
-| `SNE_VERSION` | Install this release, for example `0.1.0-beta.2`, instead of the latest |
+| `SNE_VERSION` | Install this release, for example `0.1.0-beta.3`, instead of the latest |
 | `SNE_INSTALL_DIR` | Put `sne.exe` in this folder |
 | `SNE_NO_MODIFY_PATH=1` | Leave `PATH` alone |
 | `SNE_NO_PROFILE=1` | Leave the PowerShell profile alone |
+| `SNE_NO_NOTIFY=1` | Do not turn on [new version notifications](../guides/notifications.md) |
 
 ```powershell
 $env:SNE_NO_PROFILE = '1'
@@ -76,9 +77,10 @@ It needs no root. The script:
 
 | Variable | Effect |
 |---|---|
-| `SNE_VERSION` | Install this release, for example `0.1.0-beta.2`, instead of the latest |
+| `SNE_VERSION` | Install this release, for example `0.1.0-beta.3`, instead of the latest |
 | `SNE_INSTALL_DIR` | Put `sne` in this folder |
 | `SNE_NO_PROFILE=1` | Leave your shell profile alone |
+| `SNE_NO_NOTIFY=1` | Do not turn on [new version notifications](../guides/notifications.md) |
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | SNE_INSTALL_DIR=/opt/bin sh

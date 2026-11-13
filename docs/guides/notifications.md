@@ -1,6 +1,7 @@
 # New version notifications
 
-sne can tell you when a new version of sne itself is out. This is off unless you turn it on.
+sne tells you when a new version of sne itself is out, beta versions included. This is on by default,
+and one command turns it off.
 
 ## Check now
 
@@ -22,22 +23,25 @@ Your installed Node.js versions are not touched.
 If sne was installed from a system package (`.deb`, `.rpm`, `.apk`, Arch or the macOS `.pkg`), the
 program belongs to the system and `sne update` cannot replace it. Install the newer package instead.
 
-## Get a desktop notification
+## Desktop notifications
 
-```sh
-sne notify on
-```
+sne checks once a day in the background. When a new version is out, your system shows a notification
+with the new version and the command to run. Each version notifies once.
 
-From then on, sne checks once a day in the background. When a new version is out, your system shows a
-notification with the new version and the command to run. Each version notifies once.
+Notifications are turned on for you:
+
+- by the Windows setup wizard (untick **Tell me when a new version of sne is available** to skip it) and
+  by `install.ps1`;
+- on macOS and Linux desktops, by sne itself the first time you run `sne install`. It prints one line
+  when it does. It does nothing on servers, in containers or in CI.
 
 ```sh
 sne notify        # show whether notifications are on
 sne notify off    # turn them off
+sne notify on     # turn them on again
 ```
 
-You can also turn this on while installing: tick **Tell me when a new version of sne is available** in
-the Windows setup wizard, or set `SNE_NOTIFY=1` before running `install.ps1` or `install.sh`.
+To install without notifications, set `SNE_NO_NOTIFY=1` before running `install.ps1` or `install.sh`.
 
 ## What it sets up
 
@@ -55,7 +59,7 @@ On Linux without systemd, `sne notify on` prints a crontab line you can add inst
 
 ## The one-line reminder
 
-Even with notifications off, `sne install` asks GitHub for the latest sne version at most once a day,
+With notifications off, `sne install` still asks GitHub for the latest sne version at most once a day,
 in the background, without slowing the install. When a newer version exists, `sne install` and
 `sne doctor` print one line about it, telling you to run `sne update`.
 

@@ -15,7 +15,8 @@ use sha2::{Digest, Sha256};
 
 use crate::{dirs, download};
 
-const LATEST_RELEASE_API: &str = "https://api.github.com/repos/sne-sh/sne/releases/latest";
+/// The newest releases, betas included. Drafts are never listed here.
+const RELEASES_API: &str = "https://api.github.com/repos/sne-sh/sne/releases?per_page=20";
 const RELEASES_PAGE: &str = "https://github.com/sne-sh/sne/releases/latest";
 const RELEASE_DOWNLOADS: &str = "https://github.com/sne-sh/sne/releases/download";
 /// `sne install` asks GitHub again only when the last answer is older than this.
@@ -51,22 +52,31 @@ fn write_version(path: &Path, version: &Version) {
     let _ = fs::write(path, version.to_string());
 }
 
-/// The version of the latest release and its tag exactly as published.
+/// The highest version among the published releases, with its tag exactly as published.
+/// Betas count: someone running a beta should hear about the next beta.
+/// Accepts GitHub's list of releases, or a single release object.
 fn tag_from_json(json: &str) -> Result<(Version, String)> {
     let value: serde_json::Value = serde_json::from_str(json).context("unexpected answer from GitHub")?;
-    let tag = value["tag_name"]
-        .as_str()
-        .ok_or_else(|| anyhow!("the latest release has no tag name"))?;
-    let version =
-        parse_version(tag).ok_or_else(|| anyhow!("the latest release tag `{tag}` is not a version"))?;
-    Ok((version, tag.to_string()))
+    let releases: Vec<&serde_json::Value> = match &value {
+        serde_json::Value::Array(items) => items.iter().collect(),
+        single => vec![single],
+    };
+    releases
+        .into_iter()
+        .filter(|release| release["draft"].as_bool() != Some(true))
+        .filter_map(|release| {
+            let tag = release["tag_name"].as_str()?;
+            Some((parse_version(tag)?, tag.to_string()))
+        })
+        .max_by(|a, b| a.0.cmp(&b.0))
+        .ok_or_else(|| anyhow!("no published sne release was found"))
 }
 
 fn fetch_latest() -> Result<(Version, String)> {
     let url = std::env::var("SNE_RELEASES_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
-        .unwrap_or_else(|| LATEST_RELEASE_API.to_string());
+        .unwrap_or_else(|| RELEASES_API.to_string());
     let latest = tag_from_json(&download::fetch_text(&url)?)?;
     write_version(&latest_file(), &latest.0);
     Ok(latest)
@@ -285,10 +295,38 @@ fn replace_program(new: &Path, exe: &Path) -> Result<()> {
     Ok(())
 }
 
+/// What the user chose with `sne notify on` or `off`, or that sne turned notifications on itself.
+/// While this file is missing, [`enable_by_default`] may still act.
+fn choice_file() -> PathBuf {
+    dirs::base().join("notify.txt")
+}
+
+fn remember_choice(choice: &str) {
+    let _ = fs::create_dir_all(dirs::base());
+    let _ = fs::write(choice_file(), choice);
+}
+
+/// Notifications are on unless the user says otherwise. Called once the first Node version is
+/// being installed; does nothing in CI, without a desktop, or after the user made a choice.
+pub fn enable_by_default() {
+    if passive_checks_disabled() || choice_file().exists() || !os::has_desktop() {
+        return;
+    }
+    let Ok(exe) = std::env::current_exe() else { return };
+    if os::enable(&exe).is_ok() {
+        remember_choice("on");
+        println!("sne will notify you when a new version is out. Turn this off with `sne notify off`.");
+    } else {
+        // Do not try again on every install.
+        remember_choice("unavailable");
+    }
+}
+
 /// `sne notify on`
 pub fn notify_on() -> Result<()> {
     let exe = std::env::current_exe().context("could not find the sne program")?;
     os::enable(&exe)?;
+    remember_choice("on");
     println!("Notifications are on: sne checks once a day and tells you when a new version is out.");
     println!("Turn them off with `sne notify off`.");
     Ok(())
@@ -297,6 +335,7 @@ pub fn notify_on() -> Result<()> {
 /// `sne notify off`
 pub fn notify_off() -> Result<()> {
     os::disable()?;
+    remember_choice("off");
     println!("Notifications are off.");
     Ok(())
 }
@@ -480,6 +519,10 @@ $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
         .context("could not remove the scheduled task")
     }
 
+    pub fn has_desktop() -> bool {
+        true
+    }
+
     pub fn enabled() -> bool {
         Command::new("schtasks.exe")
             .args(["/Query", "/TN", TASK_NAME])
@@ -597,6 +640,10 @@ mod os {
         }
     }
 
+    pub fn has_desktop() -> bool {
+        true
+    }
+
     pub fn enabled() -> bool {
         plist().is_file()
     }
@@ -667,6 +714,14 @@ mod os {
         Ok(())
     }
 
+    /// A graphical session with `notify-send`; servers and containers have neither.
+    pub fn has_desktop() -> bool {
+        let set = |name: &str| std::env::var_os(name).is_some_and(|v| !v.is_empty());
+        (set("DISPLAY") || set("WAYLAND_DISPLAY"))
+            && std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
+                .any(|dir| dir.join("notify-send").is_file())
+    }
+
     pub fn enabled() -> bool {
         unit_dir().join(format!("{UNIT}.timer")).is_file()
     }
@@ -689,6 +744,17 @@ mod tests {
         assert!(version > Version::parse("0.1.0").unwrap());
         assert!(version < Version::parse("0.2.0").unwrap());
         assert!(tag_from_json(r#"{"message":"Not Found"}"#).is_err());
+
+        // From a list, the highest version wins, betas count and drafts do not.
+        let list = r#"[
+            {"tag_name":"0.2.0-beta.1","prerelease":true},
+            {"tag_name":"0.3.0","draft":true},
+            {"tag_name":"0.1.0"},
+            {"tag_name":"0.2.0-beta.2","prerelease":true},
+            {"tag_name":"not-a-version"}
+        ]"#;
+        assert_eq!(tag_from_json(list).unwrap().1, "0.2.0-beta.2");
+        assert!(tag_from_json("[]").is_err());
         assert!(tag_from_json(r#"{"tag_name":"nightly"}"#).is_err());
     }
 }

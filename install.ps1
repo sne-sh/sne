@@ -3,11 +3,11 @@
 #   irm https://raw.githubusercontent.com/sne-sh/sne/main/install.ps1 | iex
 #
 # Optional settings, as environment variables set before running:
-#   SNE_VERSION         release tag to install, for example 0.1.0-beta.2 (default: latest)
+#   SNE_VERSION         release tag to install, for example 0.1.0-beta.3 (default: latest)
 #   SNE_INSTALL_DIR     where sne.exe goes (default: %LOCALAPPDATA%\Programs\sne)
 #   SNE_NO_MODIFY_PATH  set to 1 to leave PATH alone
 #   SNE_NO_PROFILE      set to 1 to leave the PowerShell profile alone
-#   SNE_NOTIFY          set to 1 to get a desktop notification when a new sne version is out
+#   SNE_NO_NOTIFY       set to 1 to not be notified when a new sne version is out
 
 function Install-Sne {
     $ErrorActionPreference = 'Stop'
@@ -113,9 +113,9 @@ function Install-Sne {
         }
     }
 
-    if ($env:SNE_NOTIFY -eq '1') {
-        & (Join-Path $installDir 'sne.exe') notify on
-    }
+    # New version notifications are on unless asked otherwise. `sne notify off` turns them off later.
+    $notify = if ($env:SNE_NO_NOTIFY -eq '1') { 'off' } else { 'on' }
+    try { & (Join-Path $installDir 'sne.exe') notify $notify } catch { Write-Host "Notifications were not changed: $_" }
 
     Write-Host ''
     Write-Host 'Done. Open a new terminal, then run:  sne install lts'

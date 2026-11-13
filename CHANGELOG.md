@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-beta.3 (2026-11-13)
+
+- New version notifications are on by default. The Windows installers turn them on, and elsewhere sne turns them on at the first `sne install` on a desktop. `sne notify off` turns them off, and `SNE_NO_NOTIFY=1` skips them when installing.
+- Notifications, `sne update` and `sne self check` now include beta releases.
+
 ## 0.1.0-beta.2 (2026-11-13)
 
 - No setup step after installing on Windows: the installers put the default Node version on `PATH`, so `node` and `sne use` work in every terminal, including cmd, Git Bash and both PowerShell editions.

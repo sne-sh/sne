@@ -89,6 +89,7 @@ pub fn run(specs: Vec<String>) -> Result<()> {
         bail!("{failures} of {} installs failed", versions.len());
     }
     super::update::hint();
+    super::update::enable_by_default();
     Ok(())
 }
 

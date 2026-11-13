@@ -4,10 +4,10 @@
 #   curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | sh
 #
 # Optional settings, as environment variables:
-#   SNE_VERSION         release tag to install, for example 0.1.0-beta.2 (default: latest)
+#   SNE_VERSION         release tag to install, for example 0.1.0-beta.3 (default: latest)
 #   SNE_INSTALL_DIR     where the sne binary goes (default: ~/.local/bin)
 #   SNE_NO_PROFILE      set to 1 to leave your shell profile alone
-#   SNE_NOTIFY          set to 1 to get a desktop notification when a new sne version is out
+#   SNE_NO_NOTIFY       set to 1 to not be notified when a new sne version is out
 
 set -eu
 
@@ -134,8 +134,9 @@ end"
         esac
     fi
 
-    if [ "${SNE_NOTIFY:-0}" = "1" ]; then
-        "$install_dir/sne" notify on || echo "Notifications were not turned on. Run: sne notify on"
+    # On a desktop, sne turns new version notifications on by itself at the first `sne install`.
+    if [ "${SNE_NO_NOTIFY:-0}" = "1" ]; then
+        "$install_dir/sne" notify off >/dev/null 2>&1 || true
     fi
 
     echo
