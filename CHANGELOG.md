@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 (2026-11-13)
 
-First version.
+First release.
 
 - `install`, `use`, `default`, `ls`, `ls-remote`, `uninstall`, `current`, `which`, `exec`, `alias`,
   `unalias`, `env`, `completions`, `doctor`.
@@ -13,3 +13,4 @@ First version.
 - Windows installers: a PowerShell one-liner (`install.ps1`) and a setup wizard built with Inno Setup.
 - Windows builds for x64, x86 (32-bit) and ARM64, each as a setup wizard and a portable zip.
 - Linux and macOS: `install.sh`, a universal macOS `.pkg`, and `.deb`, `.rpm`, `.apk` and Arch packages.
+- Documentation in `docs/` (published with GitBook) and a project website in `site/`.

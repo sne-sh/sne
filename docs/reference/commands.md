@@ -1,0 +1,180 @@
+# Commands
+
+Run `sne help` or `sne <command> --help` to see this in your terminal. Wherever a command takes a
+version, you can use anything from the [version syntax](version-syntax.md).
+
+## Summary
+
+| Command | What it does |
+|---|---|
+| [`sne install`](#sne-install) | Install one or more versions |
+| [`sne use`](#sne-use) | Switch this terminal to an installed version |
+| [`sne default`](#sne-default) | Set the version new terminals start with |
+| [`sne ls`](#sne-ls) | List installed versions |
+| [`sne ls-remote`](#sne-ls-remote) | List versions available to install |
+| [`sne uninstall`](#sne-uninstall) | Remove an installed version |
+| [`sne current`](#sne-current) | Show the version active in this terminal |
+| [`sne which`](#sne-which) | Show the path of a version's `node` program |
+| [`sne exec`](#sne-exec) | Run a command with a specific version |
+| [`sne alias`](#sne-alias) | Name a version, or list aliases |
+| [`sne unalias`](#sne-unalias) | Remove an alias |
+| [`sne env`](#sne-env) | Print the setup code for your shell |
+| [`sne completions`](#sne-completions) | Print a tab-completion script |
+| [`sne doctor`](#sne-doctor) | Check that sne is set up correctly |
+
+## sne install
+
+```
+sne install [VERSIONS]...
+```
+
+Installs one or more versions. With several versions, the downloads run in parallel. With no version,
+installs what the project asks for in its [version file](../guides/version-files.md).
+
+Each download is checked against the SHA-256 published by nodejs.org. An interrupted install leaves
+nothing behind.
+
+```sh
+sne install lts
+sne install 20 22 24
+sne install ">=20 <23"
+sne install
+```
+
+Short form: `sne i`.
+
+## sne use
+
+```
+sne use [VERSION]
+```
+
+Switches the current terminal to an installed version. With no version, uses what the project asks
+for. Other terminals are not affected.
+
+```sh
+sne use 22
+sne use lts/iron
+sne use work
+sne use
+```
+
+## sne default
+
+```
+sne default <VERSION>
+```
+
+Sets the version that new terminals start with.
+
+## sne ls
+
+```
+sne ls
+```
+
+Lists installed versions. Also available as `sne list`.
+
+## sne ls-remote
+
+```
+sne ls-remote [--lts] [FILTER]
+```
+
+Lists the versions you can install.
+
+| Option | Effect |
+|---|---|
+| `--lts` | Show only LTS releases |
+| `FILTER` | Show only versions that match, for example `22`, `>=20` or `lts/iron` |
+
+The list is cached for one hour, so repeated calls do not use the network.
+
+## sne uninstall
+
+```
+sne uninstall <VERSION>
+```
+
+Removes an installed version. Short form: `sne rm`.
+
+## sne current
+
+```
+sne current
+```
+
+Prints the version active in this terminal.
+
+## sne which
+
+```
+sne which [VERSION]
+```
+
+Prints the full path of the `node` program for a version. With no version, uses what the project asks
+for.
+
+## sne exec
+
+```
+sne exec <VERSION> -- <COMMAND>...
+```
+
+Runs one command with a specific version, without switching the terminal. It needs no shell setup.
+
+```sh
+sne exec 20 -- npm test
+sne exec lts -- node script.js
+```
+
+## sne alias
+
+```
+sne alias [NAME] [VERSION]
+```
+
+Gives a version a name. With no arguments, lists all aliases.
+
+```sh
+sne alias work 20
+sne alias
+```
+
+## sne unalias
+
+```
+sne unalias <NAME>
+```
+
+Removes an alias.
+
+## sne env
+
+```
+sne env [--shell <SHELL>] [--use-on-cd]
+```
+
+Prints the code that sets up the current shell. You normally call it from your shell profile; see
+[Shell setup](../getting-started/shell-setup.md).
+
+| Option | Effect |
+|---|---|
+| `--shell <SHELL>` | One of `bash`, `zsh`, `fish`, `powershell`, `cmd`. Detected when left out. |
+| `--use-on-cd` | Also switch versions when you `cd` into a project |
+
+## sne completions
+
+```
+sne completions <SHELL>
+```
+
+Prints a tab-completion script for `bash`, `zsh`, `fish`, `powershell` or `elvish`.
+
+## sne doctor
+
+```
+sne doctor
+```
+
+Checks the setup in this terminal and says what to fix. Run it first when something does not work.

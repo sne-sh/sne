@@ -12,6 +12,8 @@
   interrupted install never leaves a half-installed version.
 - **No admin rights on Windows.** Uses directory junctions, so Developer Mode is not needed.
 
+[Website](https://sne-sh.github.io/sne/) | [Documentation](docs/README.md) | [Changelog](CHANGELOG.md)
+
 > Status: early (0.1.0). The Windows build is tested end to end. The Linux and macOS code paths are
 > covered by the test suite in CI but have had less real-world use.
 

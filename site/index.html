@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sne: a fast Node.js version manager</title>
+<meta name="description" content="sne installs Node.js versions and switches between them by moving one link. One small binary for Windows, Linux and macOS.">
+<link rel="icon" href="logo-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400..600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #EEF3F4;
+  --paper-deep: #DFE8EA;
+  --ink: #0B1220;
+  --ink-soft: #45536A;
+  --cyan: #22D3EE;
+  --cyan-deep: #0A6C80;
+  --bolt: #FACC15;
+  --line: #C3D1D6;
+  --display: "Bricolage Grotesque", "Segoe UI", sans-serif;
+  --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1.0625rem/1.6 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--cyan-deep); text-underline-offset: 3px; }
+a:hover { color: var(--ink); }
+:focus-visible { outline: 3px solid var(--cyan-deep); outline-offset: 3px; border-radius: 4px; }
+code, pre, kbd { font-family: var(--mono); font-size: 0.92em; }
+p code, li code, td code, dd code { background: var(--paper-deep); padding: 0.1em 0.35em; border-radius: 4px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+/* Top bar */
+.top { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+.brand { display: flex; align-items: center; gap: 10px; font: 700 1.5rem/1 var(--display); color: var(--ink); text-decoration: none; }
+.brand img { width: 36px; height: 36px; }
+.top nav { display: flex; gap: 22px; flex-wrap: wrap; }
+.top nav a { color: var(--ink); text-decoration: none; font-weight: 500; }
+.top nav a:hover { text-decoration: underline; }
+
+/* Hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; align-items: center; padding: 56px 0 88px; }
+h1 { font: 800 clamp(2.6rem, 6.2vw, 4.9rem)/0.98 var(--display); letter-spacing: -0.035em; margin: 0 0 24px; font-stretch: 88%; }
+.lede { font-size: 1.2rem; color: var(--ink-soft); max-width: 34em; margin: 0 0 32px; }
+
+.install { background: var(--ink); color: #E6EEF2; border-radius: 14px; overflow: hidden; max-width: 620px; }
+.install [role=tablist] { display: flex; border-bottom: 1px solid #24304A; }
+.install [role=tab] {
+  flex: 1; background: none; border: 0; color: #9FB0C6; cursor: pointer;
+  font: 500 0.95rem var(--body); padding: 12px 14px; border-bottom: 3px solid transparent;
+}
+.install [role=tab][aria-selected=true] { color: #fff; border-bottom-color: var(--bolt); }
+.install .cmd { display: flex; align-items: center; gap: 12px; padding: 16px 16px 16px 20px; }
+.install pre { margin: 0; flex: 1; overflow-x: auto; white-space: pre; font-size: 0.86rem; line-height: 1.5; }
+.install pre::before { content: "$ "; color: var(--cyan); }
+.install pre.ps::before { content: "> "; }
+.copy {
+  flex: none; background: var(--bolt); color: var(--ink); border: 0; border-radius: 8px; cursor: pointer;
+  font: 600 0.9rem var(--body); padding: 9px 14px; min-width: 76px;
+}
+.copy:hover { background: #FFE04D; }
+.install-note { font-size: 0.95rem; color: var(--ink-soft); margin: 14px 0 0; max-width: 620px; }
+
+/* The link switcher */
+.switcher { margin: 0; }
+.switcher svg { width: 100%; height: auto; display: block; }
+.switcher .box { fill: #fff; stroke: var(--ink); stroke-width: 2; }
+.switcher .wire { stroke: var(--ink); stroke-width: 2; fill: none; }
+.switcher .pointer { stroke: var(--ink); stroke-width: 5; stroke-linecap: round; }
+.switcher text { font-family: var(--mono); font-size: 15px; fill: var(--ink); }
+.switcher .small { font-size: 12px; fill: var(--ink-soft); }
+.switcher .ver { cursor: pointer; }
+.switcher .ver polygon { fill: var(--paper); stroke: var(--ink); stroke-width: 2; transition: fill 120ms; }
+.switcher .ver:hover polygon { fill: #fff; }
+.switcher .ver[aria-pressed=true] polygon { fill: var(--cyan); }
+.switcher .ver text { font-family: var(--display); font-weight: 700; font-size: 22px; text-anchor: middle; }
+.switcher .ver:focus-visible { outline: none; }
+.switcher .ver:focus-visible polygon { stroke: var(--cyan-deep); stroke-width: 5; }
+.switcher figcaption { margin-top: 10px; }
+.switcher .ran { font-family: var(--mono); font-size: 0.95rem; background: var(--ink); color: #E6EEF2; border-radius: 10px; padding: 12px 16px; }
+.switcher .ran b { color: var(--bolt); font-weight: 500; }
+.switcher .hint { font-size: 0.95rem; color: var(--ink-soft); margin: 10px 0 0; }
+
+/* Sections */
+section { padding: 72px 0; border-top: 2px solid var(--ink); }
+h2 { font: 700 clamp(1.9rem, 3.6vw, 2.75rem)/1.05 var(--display); letter-spacing: -0.025em; margin: 0 0 12px; font-stretch: 90%; }
+.intro { color: var(--ink-soft); max-width: 40em; margin: 0 0 40px; }
+
+.reasons { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 38rem); gap: 0 48px; margin: 0; }
+.reasons dt { font: 700 1.3rem/1.2 var(--display); padding: 22px 0; border-top: 1px solid var(--line); }
+.reasons dd { margin: 0; padding: 22px 0; border-top: 1px solid var(--line); color: var(--ink-soft); }
+
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+table { border-collapse: collapse; width: 100%; font-size: 0.98rem; }
+th, td { text-align: left; padding: 11px 14px 11px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; border-bottom: 2px solid var(--ink); }
+td.num { font-family: var(--mono); white-space: nowrap; }
+.scroll { overflow-x: auto; }
+
+.term { background: var(--ink); color: #E6EEF2; border-radius: 14px; padding: 22px 24px; margin: 0; overflow-x: auto; font-size: 0.9rem; line-height: 1.75; }
+.term .c { color: #8496AE; }
+
+#changelog-body h3 { font: 700 1.5rem/1.2 var(--display); margin: 36px 0 10px; }
+#changelog-body h3:first-child { margin-top: 0; }
+#changelog-body ul { padding-left: 1.2em; margin: 0; max-width: 46em; }
+#changelog-body li { margin: 6px 0; }
+#changelog-body p { max-width: 46em; }
+
+footer { border-top: 2px solid var(--ink); padding: 32px 0 56px; color: var(--ink-soft); font-size: 0.95rem; }
+footer .wrap { display: flex; gap: 24px; justify-content: space-between; flex-wrap: wrap; }
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; gap: 40px; padding: 28px 0 56px; }
+  .split { grid-template-columns: 1fr; }
+  .reasons { grid-template-columns: 1fr; }
+  .reasons dd { border-top: 0; padding-top: 0; }
+  section { padding: 52px 0; }
+  .top nav { gap: 14px; font-size: 0.95rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .switcher .ver polygon { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><img src="logo-512.png" alt="">sne</a>
+    <nav aria-label="Main">
+      <a href="#install">Install</a>
+      <a href="#commands">Commands</a>
+      <a href="#changelog">Changelog</a>
+      <a href="https://github.com/sne-sh/sne/tree/main/docs" id="docs-link">Docs</a>
+      <a href="https://github.com/sne-sh/sne">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div>
+        <h1>Change Node versions by moving one link.</h1>
+        <p class="lede">sne installs Node.js and switches between versions on Windows, Linux and macOS. It is one small program, it reads the <code>.nvmrc</code> you already have, and it stays out of the way when you run <code>node</code>.</p>
+
+        <div class="install">
+          <div role="tablist" aria-label="Your system">
+            <button role="tab" id="tab-win" aria-controls="cmd-panel" aria-selected="false">Windows</button>
+            <button role="tab" id="tab-unix" aria-controls="cmd-panel" aria-selected="true">macOS and Linux</button>
+          </div>
+          <div class="cmd" role="tabpanel" id="cmd-panel" aria-labelledby="tab-unix">
+            <pre id="cmd-text">curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | sh</pre>
+            <button class="copy" id="copy" type="button">Copy</button>
+          </div>
+        </div>
+        <p class="install-note" id="install-note">Paste it in a terminal. No root needed. Then open a new terminal and run <code>sne install lts</code>.</p>
+      </div>
+
+      <figure class="switcher">
+        <svg viewBox="0 0 520 330" role="group" aria-label="How sne switches versions: your PATH points at a link, and the link points at one installed version. Choose a version to move the link.">
+          <rect class="box" x="14" y="135" width="96" height="60" rx="8"/>
+          <text x="62" y="171" text-anchor="middle">PATH</text>
+          <text class="small" x="62" y="215" text-anchor="middle">never changes</text>
+          <path class="wire" d="M110 165 H170"/>
+          <rect class="box" x="170" y="135" width="104" height="60" rx="8"/>
+          <text x="222" y="171" text-anchor="middle">link</text>
+          <text class="small" x="222" y="215" text-anchor="middle">one per terminal</text>
+          <line class="pointer" id="pointer" x1="274" y1="165" x2="392" y2="165"/>
+          <circle id="pointer-tip" cx="392" cy="165" r="7" fill="#0B1220"/>
+          <g class="ver" role="button" tabindex="0" aria-pressed="false" data-v="20" data-y="60" transform="translate(445 60)">
+            <polygon points="0,-46 40,-23 40,23 0,46 -40,23 -40,-23"/><text y="8">20</text>
+          </g>
+          <g class="ver" role="button" tabindex="0" aria-pressed="true" data-v="22" data-y="165" transform="translate(445 165)">
+            <polygon points="0,-46 40,-23 40,23 0,46 -40,23 -40,-23"/><text y="8">22</text>
+          </g>
+          <g class="ver" role="button" tabindex="0" aria-pressed="false" data-v="24" data-y="270" transform="translate(445 270)">
+            <polygon points="0,-46 40,-23 40,23 0,46 -40,23 -40,-23"/><text y="8">24</text>
+          </g>
+        </svg>
+        <figcaption>
+          <div class="ran" aria-live="polite">$ sne use <b id="ran-version">22</b></div>
+          <p class="hint">Pick a version. That is the whole switch: the link moves, and every <code>node</code>, <code>npm</code> and <code>npx</code> in that terminal follows it.</p>
+        </figcaption>
+      </figure>
+    </div>
+
+    <section id="why">
+      <h2>Why it is quick</h2>
+      <p class="intro">Most of the time a version manager costs you is spent on things sne does not do.</p>
+      <dl class="reasons">
+        <dt>No shims</dt>
+        <dd>Other tools put a small program in front of <code>node</code> that looks up the right version on every call. With sne, <code>node</code> is the real Node.js binary. Nothing runs in between.</dd>
+        <dt>No script to load</dt>
+        <dd>sne is a native program written in Rust. Your shell runs it once at startup; there is no shell framework to parse on every prompt.</dd>
+        <dt>Installs that stream</dt>
+        <dd>The download is checked against the SHA-256 from nodejs.org while it arrives. On Linux and macOS it is unpacked at the same time; on Windows the zip is unpacked on several threads. Ask for several versions and they download in parallel.</dd>
+        <dt>No admin rights</dt>
+        <dd>On Windows the link is a directory junction, so you need neither an administrator prompt nor Developer Mode.</dd>
+      </dl>
+
+      <div class="split" style="margin-top:56px">
+        <div>
+          <p>Measured on Windows 11 with the release build, averaged over 50 runs from PowerShell. Almost all of each figure is what Windows needs to start any program at all.</p>
+          <p>Installing two Node versions in parallel with <code>sne install lts 20</code> took 2.4 seconds on a fast connection.</p>
+        </div>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Command</th><th>Time</th></tr></thead>
+            <tbody>
+              <tr><td><code>sne use 20</code></td><td class="num">6.8 ms</td></tr>
+              <tr><td>Automatic switch when you <code>cd</code></td><td class="num">6.1 ms</td></tr>
+              <tr><td><code>sne env</code>, once per terminal</td><td class="num">7.2 ms</td></tr>
+              <tr><td><code>sne current</code></td><td class="num">5.9 ms</td></tr>
+              <tr><td>An empty <code>cmd /c exit</code>, for scale</td><td class="num">8.9 ms</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="install">
+      <h2>Install</h2>
+      <p class="intro">The command at the top of this page is the short way. If you would rather download a file, every release has these, each listed with its SHA-256 in <code>SHA256SUMS.txt</code>.</p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>System</th><th>File on the releases page</th><th>How to install it</th></tr></thead>
+          <tbody>
+            <tr><td>Windows, 64-bit</td><td><code>sne-…-x64-setup.exe</code></td><td>Run it and follow the wizard</td></tr>
+            <tr><td>Windows, 32-bit</td><td><code>sne-…-x86-setup.exe</code></td><td>Run it and follow the wizard</td></tr>
+            <tr><td>Windows, ARM64</td><td><code>sne-…-arm64-setup.exe</code></td><td>Run it and follow the wizard</td></tr>
+            <tr><td>Windows, portable</td><td><code>sne-…-windows-msvc.zip</code></td><td>Unzip and put <code>sne.exe</code> on your <code>PATH</code></td></tr>
+            <tr><td>macOS, Intel and Apple silicon</td><td><code>sne-…-macos-universal.pkg</code></td><td><code>sudo installer -pkg &lt;file&gt; -target /</code></td></tr>
+            <tr><td>Debian, Ubuntu</td><td><code>sne_…_amd64.deb</code>, <code>_arm64.deb</code></td><td><code>sudo dpkg -i &lt;file&gt;</code></td></tr>
+            <tr><td>Fedora, RHEL, openSUSE</td><td><code>sne-…x86_64.rpm</code>, <code>aarch64.rpm</code></td><td><code>sudo rpm -i &lt;file&gt;</code></td></tr>
+            <tr><td>Alpine</td><td><code>sne_…_x86_64.apk</code>, <code>_aarch64.apk</code></td><td><code>sudo apk add --allow-untrusted &lt;file&gt;</code></td></tr>
+            <tr><td>Arch</td><td><code>sne-…pkg.tar.zst</code></td><td><code>sudo pacman -U &lt;file&gt;</code></td></tr>
+            <tr><td>Any Linux or macOS, portable</td><td><code>sne-…tar.gz</code></td><td>Unpack and put <code>sne</code> on your <code>PATH</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:28px"><a href="https://github.com/sne-sh/sne/releases/latest">Open the latest release</a></p>
+      <p class="intro" style="margin:0">The Windows wizard and the macOS package are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper will ask you to confirm. Packages and portable files do not touch your shell profile; add the setup line from the <a href="https://github.com/sne-sh/sne/blob/main/docs/getting-started/shell-setup.md">shell setup page</a> yourself.</p>
+    </section>
+
+    <section id="commands">
+      <h2>Everyday commands</h2>
+      <p class="intro">A version can be <code>22</code>, <code>22.11</code>, <code>latest</code>, <code>lts</code>, <code>lts/iron</code>, a range such as <code>&gt;=20 &lt;23</code>, or a name you gave it.</p>
+<pre class="term"><code>sne install lts          <span class="c"># newest LTS release</span>
+sne install 20 22 24     <span class="c"># several versions, downloaded in parallel</span>
+sne install              <span class="c"># whatever this project asks for</span>
+
+sne use 22               <span class="c"># switch this terminal</span>
+sne use                  <span class="c"># switch to the project's version</span>
+sne default 22           <span class="c"># version for new terminals</span>
+
+sne ls                   <span class="c"># installed versions</span>
+sne ls-remote --lts      <span class="c"># versions you can install</span>
+sne exec 20 -- npm test  <span class="c"># run one command with another version</span>
+sne alias work 20        <span class="c"># name a version, then: sne use work</span>
+sne doctor               <span class="c"># check the setup</span></code></pre>
+      <p style="margin-top:28px">Inside a project, sne reads <code>.node-version</code>, then <code>.nvmrc</code>, then <code>engines.node</code> in <code>package.json</code>, so projects set up for nvm or fnm work as they are.</p>
+    </section>
+
+    <section id="changelog">
+      <h2>Changelog</h2>
+      <div id="changelog-body">
+        <p>The changelog is kept in <a href="https://github.com/sne-sh/sne/blob/main/CHANGELOG.md">CHANGELOG.md</a> on GitHub.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>sne is free software under the MIT license.</span>
+    <span><a href="https://github.com/sne-sh/sne">Source</a> &nbsp; <a href="https://github.com/sne-sh/sne/issues">Report a problem</a> &nbsp; <a href="https://github.com/sne-sh/sne/releases">Releases</a></span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // Install command tabs
+  var commands = {
+    'tab-win': {
+      text: 'irm https://raw.githubusercontent.com/sne-sh/sne/main/install.ps1 | iex',
+      ps: true,
+      note: 'Paste it in PowerShell. No administrator rights needed. Then open a new terminal and run <code>sne install lts</code>.'
+    },
+    'tab-unix': {
+      text: 'curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | sh',
+      ps: false,
+      note: 'Paste it in a terminal. No root needed. Then open a new terminal and run <code>sne install lts</code>.'
+    }
+  };
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.install [role=tab]'));
+  var cmdText = document.getElementById('cmd-text');
+  var note = document.getElementById('install-note');
+  var panel = document.getElementById('cmd-panel');
+  function select(id) {
+    tabs.forEach(function (t) {
+      var on = t.id === id;
+      t.setAttribute('aria-selected', on);
+      t.tabIndex = on ? 0 : -1;
+    });
+    cmdText.textContent = commands[id].text;
+    cmdText.classList.toggle('ps', commands[id].ps);
+    note.innerHTML = commands[id].note;
+    panel.setAttribute('aria-labelledby', id);
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { select(t.id); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        var next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        select(next.id);
+        next.focus();
+      }
+    });
+  });
+  select(/Win/i.test(navigator.platform || navigator.userAgent) ? 'tab-win' : 'tab-unix');
+
+  var copy = document.getElementById('copy');
+  copy.addEventListener('click', function () {
+    var done = function () {
+      copy.textContent = 'Copied';
+      setTimeout(function () { copy.textContent = 'Copy'; }, 1600);
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(cmdText.textContent).then(done, function () {});
+    } else {
+      var range = document.createRange();
+      range.selectNodeContents(cmdText);
+      var sel = getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  });
+
+  // The link switcher
+  var pointer = document.getElementById('pointer');
+  var tip = document.getElementById('pointer-tip');
+  var ran = document.getElementById('ran-version');
+  var versions = Array.prototype.slice.call(document.querySelectorAll('.switcher .ver'));
+  var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var frame;
+  function aim(y) {
+    // The pointer stops at the hexagon's left edge, which leans toward the link for the outer two.
+    var x = y === 165 ? 398 : 404;
+    var endY = y === 165 ? 165 : y + (y < 165 ? 18 : -18);
+    var fromX = +pointer.getAttribute('x2'), fromY = +pointer.getAttribute('y2');
+    cancelAnimationFrame(frame);
+    if (still) { set(x, endY); return; }
+    var start = performance.now();
+    (function step(now) {
+      var t = Math.min(1, (now - start) / 140);
+      t = 1 - Math.pow(1 - t, 3);
+      set(fromX + (x - fromX) * t, fromY + (endY - fromY) * t);
+      if (t < 1) frame = requestAnimationFrame(step);
+    })(start);
+  }
+  function set(x, y) {
+    pointer.setAttribute('x2', x); pointer.setAttribute('y2', y);
+    tip.setAttribute('cx', x); tip.setAttribute('cy', y);
+  }
+  function use(g) {
+    versions.forEach(function (v) { v.setAttribute('aria-pressed', v === g); });
+    ran.textContent = g.dataset.v;
+    aim(+g.dataset.y);
+  }
+  versions.forEach(function (g) {
+    g.setAttribute('aria-label', 'Use Node ' + g.dataset.v);
+    g.addEventListener('click', function () { use(g); });
+    g.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); use(g); }
+    });
+  });
+  set(398, 165);
+
+  // Changelog, rendered from the CHANGELOG.md that is published next to this page
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function inline(s) {
+    return esc(s)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2">$1</a>');
+  }
+  function render(md) {
+    var html = '', list = null, para = null;
+    function flush() {
+      if (list) { html += '<ul>' + list.map(function (i) { return '<li>' + inline(i) + '</li>'; }).join('') + '</ul>'; list = null; }
+      if (para) { html += '<p>' + inline(para) + '</p>'; para = null; }
+    }
+    md.split(/\r?\n/).forEach(function (line) {
+      if (/^# /.test(line)) return;
+      if (/^## /.test(line)) { flush(); html += '<h3>' + inline(line.slice(3)) + '</h3>'; }
+      else if (/^- /.test(line)) { if (para) flush(); (list = list || []).push(line.slice(2)); }
+      else if (/^\s+\S/.test(line) && list) { list[list.length - 1] += ' ' + line.trim(); }
+      else if (line.trim() === '') { if (para) flush(); }
+      else { if (list) flush(); para = (para ? para + ' ' : '') + line.trim(); }
+    });
+    flush();
+    return html;
+  }
+  fetch('CHANGELOG.md').then(function (r) { if (!r.ok) throw 0; return r.text(); }).then(function (md) {
+    var html = render(md);
+    if (html) document.getElementById('changelog-body').innerHTML = html;
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>
