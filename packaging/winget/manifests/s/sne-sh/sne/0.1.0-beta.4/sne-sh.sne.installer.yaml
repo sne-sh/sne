@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+
+PackageIdentifier: sne-sh.sne
+PackageVersion: 0.1.0-beta.4
+InstallerType: inno
+Scope: user
+InstallModes:
+- interactive
+- silent
+- silentWithProgress
+UpgradeBehavior: install
+Commands:
+- sne
+ReleaseDate: 2026-11-13
+Installers:
+- Architecture: x64
+  InstallerUrl: https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-x64-setup.exe
+  InstallerSha256: 349C9B2C65A4391AB0ED27F2BC903BFE0CE8906CB983BEA57E1E2B866D0C0895
+- Architecture: x86
+  InstallerUrl: https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-x86-setup.exe
+  InstallerSha256: 4132725462C11AD2D8D67D11BC064B9E730C2A4C2A56AD7951268417672E59FC
+- Architecture: arm64
+  InstallerUrl: https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-arm64-setup.exe
+  InstallerSha256: C3A9EB4DB20700259A78E04204034F13E298F9DFE79377F8AC6AF2B4692CCA71
+ManifestType: installer
+ManifestVersion: 1.10.0

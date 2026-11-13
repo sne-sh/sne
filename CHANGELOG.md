@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Install with Scoop (`scoop bucket add sne https://github.com/sne-sh/sne`) or Homebrew (`brew tap sne-sh/sne https://github.com/sne-sh/sne`).
+- sne is on crates.io: `cargo install sne --version <version>`.
+
 ## 0.1.0-beta.4 (2026-11-13)
 
 - Windows: `sne use`, `sne default` and the first `sne install` add the default Node version to your `PATH` when it is missing. It was missing when sne was installed before 0.1.0-beta.2 and then updated with `sne update`, and after `cargo install` or the zip file. Before, sne only said to open a new terminal, and Node was still missing there.

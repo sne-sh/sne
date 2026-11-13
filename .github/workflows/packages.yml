@@ -1,0 +1,109 @@
+name: Packages
+
+# Installs sne with each package manager manifest in this repository and runs it.
+# The manifests are written by packaging/update-manifests.ps1 after a release is published.
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - bucket/**
+      - Formula/**
+      - packaging/aur/**
+      - packaging/winget/**
+      - .github/workflows/packages.yml
+  pull_request:
+    paths:
+      - bucket/**
+      - Formula/**
+      - packaging/aur/**
+      - packaging/winget/**
+      - .github/workflows/packages.yml
+  workflow_dispatch:
+
+concurrency:
+  group: packages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scoop:
+    name: Scoop
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Scoop
+        shell: pwsh
+        run: |
+          Invoke-RestMethod get.scoop.sh -OutFile "$env:RUNNER_TEMP\install-scoop.ps1"
+          & "$env:RUNNER_TEMP\install-scoop.ps1" -RunAsAdmin
+          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\scoop\shims"
+      - name: Install sne from the manifest
+        shell: pwsh
+        run: |
+          $version = (Get-Content bucket\sne.json -Raw | ConvertFrom-Json).version
+          scoop install "$PWD\bucket\sne.json"
+          $said = sne --version
+          if ($said -ne "sne $version") {
+            Write-Host "::error title=Scoop::expected 'sne $version', got '$said'"
+            exit 1
+          }
+
+  winget:
+    name: winget manifest
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate
+        shell: pwsh
+        run: |
+          $dir = Get-ChildItem packaging\winget\manifests\s\sne-sh\sne -Directory | Select-Object -First 1
+          winget validate --manifest $dir.FullName
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error title=winget::the manifest in $($dir.Name) is not valid"
+            exit 1
+          }
+
+  homebrew:
+    name: Homebrew
+    runs-on: macos-latest
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_ANALYTICS: 1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install sne from the formula
+        run: |
+          version="$(sed -n 's/^  version "\(.*\)"$/\1/p' Formula/sne.rb)"
+          # The tap is this checkout, so the formula under test is the one in this commit.
+          git switch -c under-test
+          brew tap sne-sh/sne "$PWD"
+          brew install sne-sh/sne/sne
+          said="$(sne --version)"
+          if [ "$said" != "sne $version" ]; then
+            echo "::error title=Homebrew::expected 'sne $version', got '$said'"
+            exit 1
+          fi
+          brew test sne-sh/sne/sne
+
+  aur:
+    name: AUR
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and install the package
+        run: |
+          useradd -m build
+          cp -r packaging/aur /home/build/aur
+          chown -R build /home/build/aur
+          cd /home/build/aur
+          sudo -u build makepkg --noconfirm
+          # .SRCINFO is written by hand in update-manifests.ps1, so compare it with the real one.
+          sudo -u build makepkg --printsrcinfo > /tmp/SRCINFO
+          if ! diff -u .SRCINFO /tmp/SRCINFO > /tmp/srcinfo.diff; then
+            cat /tmp/srcinfo.diff
+            echo "::error title=AUR::.SRCINFO differs from makepkg --printsrcinfo:%0A$(sed ':a;N;$!ba;s/\n/%0A/g' /tmp/srcinfo.diff)"
+            exit 1
+          fi
+          pacman -U --noconfirm sne-bin-*.pkg.tar.zst
+          sne --version
+          test -f /etc/profile.d/sne.sh

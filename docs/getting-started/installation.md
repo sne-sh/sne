@@ -51,6 +51,19 @@ The installers are not code-signed yet, so Windows SmartScreen shows a warning. 
 then **Run anyway**.
 {% endhint %}
 
+### Scoop
+
+The sne repository is also a [Scoop](https://scoop.sh) bucket:
+
+```powershell
+scoop bucket add sne https://github.com/sne-sh/sne
+scoop install sne
+```
+
+Update later with `scoop update sne`. Scoop does not change your PowerShell profile. `node` works in
+every terminal after the first `sne install`; add the [setup line](shell-setup.md) only if you want a
+different version per terminal.
+
 ### Portable
 
 Unzip the portable file anywhere, add the folder to your `PATH`, then do the
@@ -85,6 +98,19 @@ It needs no root. The script:
 ```sh
 curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | SNE_INSTALL_DIR=/opt/bin sh
 ```
+
+### Homebrew
+
+The sne repository is also a [Homebrew](https://brew.sh) tap, for macOS and Linux. Because the
+repository is not named `homebrew-sne`, give its address when you add the tap:
+
+```sh
+brew tap sne-sh/sne https://github.com/sne-sh/sne
+brew install sne
+```
+
+Update later with `brew upgrade sne`. Homebrew does not change your shell profile, so finish with the
+[shell setup](shell-setup.md).
 
 ### Packages
 

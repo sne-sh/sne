@@ -41,6 +41,9 @@ The installers are not code-signed yet, so Windows SmartScreen will ask you to c
 | 32-bit | `sne-<version>-x86-setup.exe` | `sne-<version>-i686-pc-windows-msvc.zip` |
 | ARM64 | `sne-<version>-arm64-setup.exe` | `sne-<version>-aarch64-pc-windows-msvc.zip` |
 
+With [Scoop](https://scoop.sh): `scoop bucket add sne https://github.com/sne-sh/sne`, then
+`scoop install sne`.
+
 The portable zip holds only `sne.exe`: put it anywhere and add the shell setup line below yourself.
 Node.js stopped publishing 32-bit Windows builds after version 22, so 32-bit Windows can install
 Node 22 and older.
@@ -57,6 +60,13 @@ curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | sh
 It needs no root. It downloads the latest release, checks its SHA-256, puts `sne` in `~/.local/bin` and
 adds the setup lines to your bash, zsh or fish profile. Set `SNE_INSTALL_DIR` to change the folder,
 `SNE_NO_PROFILE=1` to leave your profile alone, or `SNE_VERSION=0.1.0-beta.4` to pick a release.
+
+With [Homebrew](https://brew.sh), on macOS or Linux; add the shell setup line below afterwards:
+
+```sh
+brew tap sne-sh/sne https://github.com/sne-sh/sne
+brew install sne
+```
 
 Packages are on the [releases page](https://github.com/sne-sh/sne/releases) too. These install `sne`
 system-wide; add the shell setup line below afterwards.

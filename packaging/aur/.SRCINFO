@@ -1,0 +1,18 @@
+pkgbase = sne-bin
+	pkgdesc = Simple Node Environment: a fast Node.js version manager
+	pkgver = 0.1.0beta.4
+	pkgrel = 1
+	url = https://github.com/sne-sh/sne
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	provides = sne
+	conflicts = sne
+	source = sne-profile-0.1.0-beta.4.sh::https://raw.githubusercontent.com/sne-sh/sne/0.1.0-beta.4/packaging/profile.sh
+	sha256sums = 38b8b613ad29dba7e1e1ed4d63da518bbeef016ed032e8a960d006967fdeb36d
+	source_x86_64 = https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-x86_64-unknown-linux-musl.tar.gz
+	sha256sums_x86_64 = 8bd729e2a3fb81122e54aef08bb9c9f162e98d134e14c1fcb10411456b84fb28
+	source_aarch64 = https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-aarch64-unknown-linux-musl.tar.gz
+	sha256sums_aarch64 = 8a54a4448e991319233c265e4268f2981d05768b11e14d3cb9202a48794170d4
+
+pkgname = sne-bin

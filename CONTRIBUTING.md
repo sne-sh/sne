@@ -97,7 +97,8 @@ built program. A pull request needs all of it green.
 | `tests/e2e.rs` | End-to-end tests against a fake mirror |
 | `install.ps1`, `install.sh` | One-line installers |
 | `installer/` | Windows setup wizard (Inno Setup) |
-| `packaging/` | Linux package definition (nfpm) |
+| `packaging/` | Linux package definition (nfpm), AUR and winget files, `update-manifests.ps1` |
+| `bucket/`, `Formula/` | Scoop manifest and Homebrew formula; this repository is the bucket and the tap |
 | `docs/` | User documentation, published with GitBook |
 | `site/` | Project website, published with GitHub Pages |
 | `.github/workflows/` | CI, release, benchmark and website workflows |
@@ -150,6 +151,11 @@ Maintainers make releases. For reference, the steps are:
 4. Review the draft on GitHub and publish it.
 5. From the tagged commit, run `cargo publish --dry-run`, then `cargo publish`, to put the version on
    crates.io. A published version cannot be changed.
+6. Run `pwsh packaging/update-manifests.ps1 <version>` and commit the result. It rewrites the Scoop
+   manifest (`bucket/`), the Homebrew formula (`Formula/`), and the AUR and winget files in
+   `packaging/` with the new version and checksums. The Packages workflow then installs sne with each.
+7. Copy `packaging/aur/PKGBUILD` and `.SRCINFO` to the AUR repository of `sne-bin` and push it. Send
+   the folder under `packaging/winget/manifests/` as a pull request to `microsoft/winget-pkgs`.
 
 To test the release build without releasing, push to the `release-dry-run` branch.
 
