@@ -73,11 +73,20 @@ system-wide; add the shell setup line below afterwards.
 The macOS package is not signed yet: use the command above, or right-click it in Finder and choose Open.
 Every file is listed with its SHA-256 in `SHA256SUMS.txt`.
 
-To build from source instead, use a recent [Rust toolchain](https://rustup.rs):
+With a recent [Rust toolchain](https://rustup.rs), you can install from
+[crates.io](https://crates.io/crates/sne) instead. While sne is in beta, the version must be given:
+
+```sh
+cargo install sne --version 0.1.0-beta.4
+```
+
+Or build from a clone of this repository:
 
 ```sh
 cargo install --path .
 ```
+
+Both put `sne` in `~/.cargo/bin`. Add the shell setup line below afterwards.
 
 ### Shell setup
 

@@ -148,6 +148,8 @@ Maintainers make releases. For reference, the steps are:
 3. The Release workflow runs every check, builds the installers for every system and creates a draft
    release.
 4. Review the draft on GitHub and publish it.
+5. From the tagged commit, run `cargo publish --dry-run`, then `cargo publish`, to put the version on
+   crates.io. A published version cannot be changed.
 
 To test the release build without releasing, push to the `release-dry-run` branch.
 

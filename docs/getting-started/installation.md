@@ -115,6 +115,22 @@ Download `sne-<version>-<target>.tar.gz`, unpack it, and put `sne` somewhere on 
 | `x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl` | Any Linux (static, no library requirements) |
 | `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu` | Recent glibc-based Linux |
 
+## Install with Cargo
+
+You need a recent stable [Rust toolchain](https://rustup.rs). sne is on
+[crates.io](https://crates.io/crates/sne). While sne is in beta, the version must be given, because
+Cargo skips beta versions otherwise:
+
+```sh
+cargo install sne --version 0.1.0-beta.4
+```
+
+Cargo builds sne and puts it in `~/.cargo/bin`, which rustup already added to your `PATH`. It does not
+change your shell profile, so add the [setup line](shell-setup.md) afterwards. On Windows you can skip
+that: the first `sne install` puts the default Node version on your `PATH`.
+
+To update, run the same command with the new version. `sne update` also works.
+
 ## Build from source
 
 You need a recent stable [Rust toolchain](https://rustup.rs).
