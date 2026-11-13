@@ -1,0 +1,14 @@
+$schema: https://api.gitbook.com/gitbook-docs.yaml
+# Site-level GitBook Git Sync file: maps the documentation space to the docs/ folder.
+# Keep each `key` unchanged; GitBook identifies the space by it.
+site:
+  title: sne
+  structure:
+    - type: space
+      key: docs
+      title: Documentation
+      path: docs
+      default: true
+      content:
+        directory: ./docs
+        language: en
