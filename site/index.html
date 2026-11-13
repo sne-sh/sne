@@ -1,11 +1,17 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sne: a fast Node.js version manager</title>
 <meta name="description" content="sne installs Node.js versions and switches between them by moving one link. One small binary for Windows, Linux and macOS.">
 <link rel="icon" href="logo-512.png">
+<script>
+  try {
+    var saved = localStorage.getItem('sne-theme');
+    if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+  } catch (e) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400..600&display=swap" rel="stylesheet">
@@ -19,11 +25,32 @@
   --cyan-deep: #0A6C80;
   --bolt: #FACC15;
   --line: #C3D1D6;
+  --rule: #0B1220;
+  --link: #0A6C80;
+  --panel: #0B1220;
+  --panel-line: #0B1220;
+  --box: #FFFFFF;
+  color-scheme: light;
   --display: "Bricolage Grotesque", "Segoe UI", sans-serif;
   --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
   --mono: "IBM Plex Mono", Consolas, monospace;
 }
+:root[data-theme="dark"] {
+  --paper: #0B1220;
+  --paper-deep: #1B2742;
+  --ink: #E8EFF3;
+  --ink-soft: #A3B3C8;
+  --line: #26334F;
+  --rule: #33425F;
+  --link: #5FE0F5;
+  --panel: #121C31;
+  --panel-line: #2A3856;
+  --box: #18233C;
+  color-scheme: dark;
+}
 * { box-sizing: border-box; }
+/* Thin scrollbars that match the page, for the few blocks that can scroll sideways. */
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
@@ -32,9 +59,9 @@ body {
   font: 400 1.0625rem/1.6 var(--body);
   -webkit-font-smoothing: antialiased;
 }
-a { color: var(--cyan-deep); text-underline-offset: 3px; }
+a { color: var(--link); text-underline-offset: 3px; }
 a:hover { color: var(--ink); }
-:focus-visible { outline: 3px solid var(--cyan-deep); outline-offset: 3px; border-radius: 4px; }
+:focus-visible { outline: 3px solid var(--link); outline-offset: 3px; border-radius: 4px; }
 code, pre, kbd { font-family: var(--mono); font-size: 0.92em; }
 p code, li code, td code, dd code { background: var(--paper-deep); padding: 0.1em 0.35em; border-radius: 4px; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
@@ -46,13 +73,19 @@ p code, li code, td code, dd code { background: var(--paper-deep); padding: 0.1e
 .top nav { display: flex; gap: 22px; flex-wrap: wrap; }
 .top nav a { color: var(--ink); text-decoration: none; font-weight: 500; }
 .top nav a:hover { text-decoration: underline; }
+.top nav { align-items: center; }
+.theme {
+  background: none; border: 1.5px solid var(--rule); border-radius: 999px; color: var(--ink); cursor: pointer;
+  font: 500 0.9rem var(--body); padding: 6px 14px;
+}
+.theme:hover { background: var(--paper-deep); }
 
 /* Hero */
 .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; align-items: center; padding: 56px 0 88px; }
 h1 { font: 800 clamp(2.6rem, 6.2vw, 4.9rem)/0.98 var(--display); letter-spacing: -0.035em; margin: 0 0 24px; font-stretch: 88%; }
 .lede { font-size: 1.2rem; color: var(--ink-soft); max-width: 34em; margin: 0 0 32px; }
 
-.install { background: var(--ink); color: #E6EEF2; border-radius: 14px; overflow: hidden; max-width: 620px; }
+.install { background: var(--panel); border: 1px solid var(--panel-line); color: #E6EEF2; border-radius: 14px; overflow: hidden; max-width: 620px; }
 .install [role=tablist] { display: flex; border-bottom: 1px solid #24304A; }
 .install [role=tab] {
   flex: 1; background: none; border: 0; color: #9FB0C6; cursor: pointer;
@@ -60,11 +93,11 @@ h1 { font: 800 clamp(2.6rem, 6.2vw, 4.9rem)/0.98 var(--display); letter-spacing:
 }
 .install [role=tab][aria-selected=true] { color: #fff; border-bottom-color: var(--bolt); }
 .install .cmd { display: flex; align-items: center; gap: 12px; padding: 16px 16px 16px 20px; }
-.install pre { margin: 0; flex: 1; overflow-x: auto; white-space: pre; font-size: 0.86rem; line-height: 1.5; }
+.install pre { margin: 0; flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.86rem; line-height: 1.55; }
 .install pre::before { content: "$ "; color: var(--cyan); }
 .install pre.ps::before { content: "> "; }
 .copy {
-  flex: none; background: var(--bolt); color: var(--ink); border: 0; border-radius: 8px; cursor: pointer;
+  flex: none; background: var(--bolt); color: #0B1220; border: 0; border-radius: 8px; cursor: pointer;
   font: 600 0.9rem var(--body); padding: 9px 14px; min-width: 76px;
 }
 .copy:hover { background: #FFE04D; }
@@ -73,25 +106,27 @@ h1 { font: 800 clamp(2.6rem, 6.2vw, 4.9rem)/0.98 var(--display); letter-spacing:
 /* The link switcher */
 .switcher { margin: 0; }
 .switcher svg { width: 100%; height: auto; display: block; }
-.switcher .box { fill: #fff; stroke: var(--ink); stroke-width: 2; }
+.switcher .box { fill: var(--box); stroke: var(--ink); stroke-width: 2; }
 .switcher .wire { stroke: var(--ink); stroke-width: 2; fill: none; }
 .switcher .pointer { stroke: var(--ink); stroke-width: 5; stroke-linecap: round; }
 .switcher text { font-family: var(--mono); font-size: 15px; fill: var(--ink); }
 .switcher .small { font-size: 12px; fill: var(--ink-soft); }
 .switcher .ver { cursor: pointer; }
 .switcher .ver polygon { fill: var(--paper); stroke: var(--ink); stroke-width: 2; transition: fill 120ms; }
-.switcher .ver:hover polygon { fill: #fff; }
+.switcher .ver:hover polygon { fill: var(--box); }
 .switcher .ver[aria-pressed=true] polygon { fill: var(--cyan); }
+.switcher .ver[aria-pressed=true] text { fill: #0B1220; }
+.switcher .tip { fill: var(--ink); }
 .switcher .ver text { font-family: var(--display); font-weight: 700; font-size: 22px; text-anchor: middle; }
 .switcher .ver:focus-visible { outline: none; }
-.switcher .ver:focus-visible polygon { stroke: var(--cyan-deep); stroke-width: 5; }
+.switcher .ver:focus-visible polygon { stroke: var(--link); stroke-width: 5; }
 .switcher figcaption { margin-top: 10px; }
-.switcher .ran { font-family: var(--mono); font-size: 0.95rem; background: var(--ink); color: #E6EEF2; border-radius: 10px; padding: 12px 16px; }
+.switcher .ran { font-family: var(--mono); font-size: 0.95rem; background: var(--panel); border: 1px solid var(--panel-line); color: #E6EEF2; border-radius: 10px; padding: 12px 16px; }
 .switcher .ran b { color: var(--bolt); font-weight: 500; }
 .switcher .hint { font-size: 0.95rem; color: var(--ink-soft); margin: 10px 0 0; }
 
 /* Sections */
-section { padding: 72px 0; border-top: 2px solid var(--ink); }
+section { padding: 72px 0; border-top: 2px solid var(--rule); }
 h2 { font: 700 clamp(1.9rem, 3.6vw, 2.75rem)/1.05 var(--display); letter-spacing: -0.025em; margin: 0 0 12px; font-stretch: 90%; }
 .intro { color: var(--ink-soft); max-width: 40em; margin: 0 0 40px; }
 
@@ -102,11 +137,11 @@ h2 { font: 700 clamp(1.9rem, 3.6vw, 2.75rem)/1.05 var(--display); letter-spacing
 .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
 table { border-collapse: collapse; width: 100%; font-size: 0.98rem; }
 th, td { text-align: left; padding: 11px 14px 11px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-th { font-weight: 600; border-bottom: 2px solid var(--ink); }
+th { font-weight: 600; border-bottom: 2px solid var(--rule); }
 td.num { font-family: var(--mono); white-space: nowrap; }
 .scroll { overflow-x: auto; }
 
-.term { background: var(--ink); color: #E6EEF2; border-radius: 14px; padding: 22px 24px; margin: 0; overflow-x: auto; font-size: 0.9rem; line-height: 1.75; }
+.term { background: var(--panel); border: 1px solid var(--panel-line); color: #E6EEF2; border-radius: 14px; padding: 22px 24px; margin: 0; overflow-x: auto; font-size: 0.9rem; line-height: 1.75; }
 .term .c { color: #8496AE; }
 
 #changelog-body h3 { font: 700 1.5rem/1.2 var(--display); margin: 36px 0 10px; }
@@ -115,7 +150,7 @@ td.num { font-family: var(--mono); white-space: nowrap; }
 #changelog-body li { margin: 6px 0; }
 #changelog-body p { max-width: 46em; }
 
-footer { border-top: 2px solid var(--ink); padding: 32px 0 56px; color: var(--ink-soft); font-size: 0.95rem; }
+footer { border-top: 2px solid var(--rule); padding: 32px 0 56px; color: var(--ink-soft); font-size: 0.95rem; }
 footer .wrap { display: flex; gap: 24px; justify-content: space-between; flex-wrap: wrap; }
 
 @media (max-width: 860px) {
@@ -143,6 +178,7 @@ footer .wrap { display: flex; gap: 24px; justify-content: space-between; flex-wr
       <a href="#changelog">Changelog</a>
       <a href="https://github.com/sne-sh/sne/tree/main/docs" id="docs-link">Docs</a>
       <a href="https://github.com/sne-sh/sne">GitHub</a>
+      <button class="theme" id="theme" type="button">Light mode</button>
     </nav>
   </header>
 
@@ -175,7 +211,7 @@ footer .wrap { display: flex; gap: 24px; justify-content: space-between; flex-wr
           <text x="222" y="171" text-anchor="middle">link</text>
           <text class="small" x="222" y="215" text-anchor="middle">one per terminal</text>
           <line class="pointer" id="pointer" x1="274" y1="165" x2="392" y2="165"/>
-          <circle id="pointer-tip" cx="392" cy="165" r="7" fill="#0B1220"/>
+          <circle class="tip" id="pointer-tip" cx="392" cy="165" r="7"/>
           <g class="ver" role="button" tabindex="0" aria-pressed="false" data-v="20" data-y="60" transform="translate(445 60)">
             <polygon points="0,-46 40,-23 40,23 0,46 -40,23 -40,-23"/><text y="8">20</text>
           </g>
@@ -289,6 +325,20 @@ sne notify on            <span class="c"># tell me when a new sne is out</span><
 
 <script>
 (function () {
+  // Theme switch: dark unless the visitor chose light; the choice is remembered.
+  var themeButton = document.getElementById('theme');
+  function showTheme() {
+    var dark = document.documentElement.dataset.theme !== 'light';
+    themeButton.textContent = dark ? 'Light mode' : 'Dark mode';
+  }
+  themeButton.addEventListener('click', function () {
+    var next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('sne-theme', next); } catch (e) {}
+    showTheme();
+  });
+  showTheme();
+
   // Install command tabs
   var commands = {
     'tab-win': {
