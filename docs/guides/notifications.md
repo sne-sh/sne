@@ -22,8 +22,10 @@ sne update
 This downloads the latest release for your system, checks its SHA-256, and replaces the sne program.
 Your installed Node.js versions are not touched.
 
-If sne was installed from a system package (`.deb`, `.rpm`, `.apk`, Arch or the macOS `.pkg`), the
-program belongs to the system and `sne update` cannot replace it. Install the newer package instead.
+If sne was installed with Scoop, Homebrew, npm (or yarn, pnpm, bun), Cargo or a Linux package,
+`sne update` does not replace it. It prints the command of that package manager instead, such as
+`scoop update sne` or `brew upgrade sne`, so the package manager keeps an accurate record of what it
+installed. For the macOS `.pkg`, install the newer package.
 
 ## Desktop notifications
 

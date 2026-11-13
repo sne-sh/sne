@@ -209,6 +209,9 @@ sne update
 Replaces sne with the latest release. The download is checked against the SHA-256 in the release's
 `SHA256SUMS.txt` first. `sne self update` does the same.
 
+When sne was installed with Scoop, Homebrew, npm, Cargo or a Linux package, it replaces nothing and
+prints that package manager's update command instead. A stable sne is only offered stable releases.
+
 ## sne self check
 
 ```

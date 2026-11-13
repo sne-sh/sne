@@ -187,6 +187,14 @@ pub fn update() -> Result<()> {
     let exe = std::env::current_exe()
         .and_then(|exe| exe.canonicalize())
         .context("could not find the sne program")?;
+    // A package manager keeps a record of the files it installed. Replacing one behind its back
+    // leaves that record wrong, and its next update may fail or put the old version back.
+    if let Some((manager, command)) = installed_by(&exe, &latest) {
+        println!("sne {latest} is available (you have {running}).");
+        println!("This sne was installed with {manager}. Update it the same way:");
+        println!("  {command}");
+        return Ok(());
+    }
     println!("Downloading sne {latest}...");
     let work = dirs::cache().join(format!("sne-update-{}", std::process::id()));
     let _ = fs::remove_dir_all(&work);
@@ -205,6 +213,40 @@ pub fn update() -> Result<()> {
     println!("Updated sne from {running} to {latest}");
     println!("What changed: {RELEASES_PAGE}");
     Ok(())
+}
+
+/// The package manager that installed the program at `exe`, and the command that updates it to
+/// `latest`. `None` for the installers and the portable files, which `sne update` replaces itself.
+fn installed_by(exe: &Path, latest: &Version) -> Option<(&'static str, String)> {
+    let path = exe.to_string_lossy().replace('\\', "/").to_ascii_lowercase();
+    let has = |part: &str| path.contains(part);
+    let found = if has("/scoop/apps/") {
+        ("Scoop", "scoop update sne".to_string())
+    } else if has("/cellar/") || has("/homebrew/") || has("/linuxbrew/") {
+        ("Homebrew", "brew upgrade sne".to_string())
+    } else if has("/node_modules/") {
+        (
+            "npm, yarn, pnpm or bun",
+            "npm install -g sne-cli@latest   (or the same with yarn, pnpm or bun)".to_string(),
+        )
+    } else if has("/.cargo/bin/") {
+        // Cargo skips pre-releases unless the version is given.
+        let version = if latest.is_prerelease() {
+            format!(" --version {latest}")
+        } else {
+            String::new()
+        };
+        ("Cargo", format!("cargo install sne{version}"))
+    } else if path.starts_with("/usr/bin/") {
+        (
+            "your system's package manager",
+            "the newer .deb, .rpm, .apk or Arch package from https://github.com/sne-sh/sne/releases"
+                .to_string(),
+        )
+    } else {
+        return None;
+    };
+    Some(found)
 }
 
 /// Downloads the release archive for this system into `work`, checks its SHA-256 against the
@@ -744,6 +786,51 @@ mod os {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn knows_who_installed_sne() {
+        let beta = Version::parse("0.2.0-beta.1").unwrap();
+        let stable = Version::parse("0.2.0").unwrap();
+        let by = |path: &str, latest: &Version| installed_by(Path::new(path), latest).map(|found| found.1);
+
+        assert_eq!(
+            by(r"\\?\C:\Users\me\scoop\apps\sne\0.1.0\sne.exe", &stable).as_deref(),
+            Some("scoop update sne")
+        );
+        assert_eq!(
+            by("/opt/homebrew/Cellar/sne/0.1.0/bin/sne", &stable).as_deref(),
+            Some("brew upgrade sne")
+        );
+        assert_eq!(
+            by("/home/linuxbrew/.linuxbrew/Cellar/sne/0.1.0/bin/sne", &stable).as_deref(),
+            Some("brew upgrade sne")
+        );
+        assert!(
+            by(
+                r"C:\Users\me\AppData\Local\sne\versions\v24.1.0\node_modules\sne-win32-x64\sne.exe",
+                &stable
+            )
+            .unwrap()
+            .starts_with("npm install -g sne-cli@latest")
+        );
+        assert_eq!(
+            by("/home/me/.cargo/bin/sne", &beta).as_deref(),
+            Some("cargo install sne --version 0.2.0-beta.1")
+        );
+        assert_eq!(
+            by("/home/me/.cargo/bin/sne", &stable).as_deref(),
+            Some("cargo install sne")
+        );
+        assert!(by("/usr/bin/sne", &stable).unwrap().contains(".deb"));
+
+        // The installers, the portable files and install.sh: sne replaces itself.
+        assert_eq!(
+            by(r"C:\Users\me\AppData\Local\Programs\sne\sne.exe", &stable),
+            None
+        );
+        assert_eq!(by("/home/me/.local/bin/sne", &stable), None);
+        assert_eq!(by("/usr/local/bin/sne", &stable), None);
+    }
 
     #[test]
     fn reads_the_tag_of_the_latest_release() {
