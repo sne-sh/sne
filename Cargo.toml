@@ -1,6 +1,6 @@
 [package]
 name = "sne"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 edition = "2024"
 description = "Simple Node Environment: a fast, cross-platform Node.js version manager"
 license = "MIT"
@@ -25,6 +25,7 @@ ureq = "3.5.1"
 
 [target."cfg(windows)".dependencies]
 junction = "2.1.0"
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Registry", "Win32_UI_WindowsAndMessaging"] }
 zip = { version = "9.5.1", default-features = false, features = ["deflate"] }
 
 [target."cfg(not(windows))".dependencies]

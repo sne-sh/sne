@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-beta.4 (2026-11-13)
+
+- Windows: `sne use`, `sne default` and the first `sne install` add the default Node version to your `PATH` when it is missing. It was missing when sne was installed before 0.1.0-beta.2 and then updated with `sne update`, and after `cargo install` or the zip file. Before, sne only said to open a new terminal, and Node was still missing there.
+- sne leaves `PATH` alone when `SNE_DIR` or `SNE_NO_MODIFY_PATH=1` is set, and prints the folder to add.
+- `sne use`, `sne default` and `sne doctor` say when another Node comes first on `PATH`.
+- `sne doctor` reports a default that points to a version that is no longer installed.
+- `sne uninstall` says when it leaves no default version.
+
 ## 0.1.0-beta.3 (2026-11-13)
 
 - New version notifications are on by default. The Windows installers turn them on, and elsewhere sne turns them on at the first `sne install` on a desktop. `sne notify off` turns them off, and `SNE_NO_NOTIFY=1` skips them when installing.

@@ -252,11 +252,38 @@ fn install_switch_and_uninstall() {
         "{setup}"
     );
 
+    // Without the setup line, `sne use` switches the default, which every terminal uses.
+    // SNE_DIR is set, so the real PATH of whoever runs the tests is left alone.
+    let out = Command::new(env!("CARGO_BIN_EXE_sne"))
+        .args(["use", "22"])
+        .current_dir(&root)
+        .env("SNE_DIR", &env.data)
+        .env_remove("SNE_SHELL_LINK")
+        .output()
+        .unwrap();
+    let said = String::from_utf8_lossy(&out.stdout);
+    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    assert!(said.contains("Using Node v22.1.0 in every terminal"), "{said}");
+    assert!(said.contains("to your PATH"), "{said}");
+    assert_eq!(
+        fs::read_to_string(env.data.join("aliases").join("default").join(&node)).unwrap(),
+        "v22.1.0"
+    );
+    assert_eq!(
+        env.ok(&root, &["current"]).trim(),
+        "v20.5.0",
+        "this shell keeps its version"
+    );
+
     // Uninstalling removes the version and the aliases that pointed to it.
     let out = env.ok(&root, &["uninstall", "22"]);
     assert!(out.contains("Removed alias work"), "{out}");
+    assert!(out.contains("Removed alias default"), "{out}");
+    assert!(out.contains("No default version is set now"), "{out}");
     assert!(!version_dir("v22.1.0").exists());
     assert!(version_dir("v20.5.0").join(&node).exists());
+    let doctor = env.ok(&root, &["doctor"]);
+    assert!(doctor.contains("default: not set"), "{doctor}");
 
     fs::remove_dir_all(&root).unwrap();
 }

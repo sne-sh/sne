@@ -9,6 +9,8 @@ mod resolve;
 mod shell;
 mod version;
 mod version_file;
+#[cfg(windows)]
+mod winpath;
 
 use anyhow::Result;
 use clap::{CommandFactory, Parser, Subcommand};

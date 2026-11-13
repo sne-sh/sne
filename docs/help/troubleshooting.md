@@ -14,10 +14,17 @@ The folder that holds `sne` is not on your `PATH`, or the terminal was open befo
 
 ## `node` is not found after installing a version
 
-The [setup line](../getting-started/shell-setup.md) is missing from your shell profile, or it has not
-run in this terminal.
+Neither the default version nor the [setup line](../getting-started/shell-setup.md) is active in this
+terminal.
 
-1. Check that the line is in your profile.
+On Windows, run `sne use <version>` and open a new terminal. If the default version is missing from
+your `PATH`, sne adds it. This happens when sne was installed before 0.1.0-beta.2 and then updated
+with `sne update`, or when it was installed with `cargo install` or from the zip file. sne leaves
+`PATH` alone when `SNE_DIR` or `SNE_NO_MODIFY_PATH=1` is set; it then prints the folder to add.
+
+On Linux and macOS:
+
+1. Check that the setup line is in your profile.
 2. Open a new terminal.
 3. Run `sne doctor`.
 
@@ -40,6 +47,10 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 Something else puts a `node` earlier on your `PATH`: another version manager, or a Node.js installed
 system-wide.
 
+`sne use`, `sne default` and `sne doctor` name the folder when they see this.
+
+* Remove that folder from your `PATH`. On Windows: Settings, "Edit environment variables for your
+  account", `Path`.
 * Remove the lines of nvm, fnm, volta or similar from your shell profile.
 * Or uninstall the system-wide Node.js.
 * Check which one runs: `which node` (Linux, macOS, Git Bash) or `Get-Command node` (PowerShell).

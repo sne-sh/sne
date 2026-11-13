@@ -6,7 +6,7 @@ use std::time::{Duration, SystemTime};
 use anyhow::{Context, Result, anyhow, bail};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
-use super::default_link;
+use super::{default_link, report_default_path, shell_link};
 use crate::download::{self, HashReader};
 use crate::resolve::Spec;
 use crate::version::Version;
@@ -83,6 +83,9 @@ pub fn run(specs: Vec<String>) -> Result<()> {
     {
         link::create(&dirs::version_dir(first), &default_link())?;
         println!("Node {first} is now the default");
+        if shell_link().is_none() {
+            report_default_path();
+        }
     }
 
     if failures > 0 {

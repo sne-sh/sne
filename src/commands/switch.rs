@@ -5,7 +5,7 @@ use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 
-use super::{aliases, default_link, default_on_path, is_alias_name, resolve_installed, shell_link};
+use super::{aliases, default_link, is_alias_name, report_default_path, resolve_installed, shell_link};
 use crate::resolve::Spec;
 use crate::version::Version;
 use crate::{dirs, link, version_file};
@@ -31,12 +31,7 @@ pub fn use_version(input: Option<String>) -> Result<()> {
         None => {
             link::create(&dirs::version_dir(version), &default_link())?;
             println!("Using Node {version} in every terminal");
-            if !default_on_path() {
-                println!(
-                    "Node is not on PATH in this terminal yet. Open a new terminal. If it is still \
-                     missing there, run the sne installer again or see `sne env --help`."
-                );
-            }
+            report_default_path();
         }
     }
     Ok(())
@@ -79,6 +74,9 @@ pub fn set_default(input: &str) -> Result<()> {
     let version = resolve_installed(input)?;
     link::create(&dirs::version_dir(version), &default_link())?;
     println!("Node {version} is now the default for new shells");
+    if shell_link().is_none() {
+        report_default_path();
+    }
     Ok(())
 }
 
@@ -142,6 +140,9 @@ pub fn uninstall(input: &str) -> Result<()> {
     fs::remove_dir_all(dirs::version_dir(version))
         .with_context(|| format!("could not remove Node {version}; is it still running?"))?;
     println!("Uninstalled Node {version}");
+    if link::version(&default_link()).is_none() && !dirs::installed().is_empty() {
+        println!("No default version is set now. Run `sne default <version>` to choose one.");
+    }
     Ok(())
 }
 

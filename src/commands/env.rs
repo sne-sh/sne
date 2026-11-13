@@ -4,7 +4,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 
-use super::{default_link, shell_link};
+use super::{default_link, same_path, shell_link};
 use crate::shell::Shell;
 use crate::{dirs, link};
 
@@ -50,27 +50,38 @@ pub fn doctor() -> Result<()> {
     println!("sne {}", env!("CARGO_PKG_VERSION"));
     println!("data directory: {}", dirs::base().display());
     println!("installed versions: {}", dirs::installed().len());
-    match link::version(&default_link()) {
-        Some(version) => println!("default: {version}"),
-        None => println!("default: not set (run `sne default <version>`)"),
-    }
-
     let mut problems = 0;
     let mut problem = |message: &str| {
         problems += 1;
         println!("problem: {message}");
     };
 
+    match link::version(&default_link()) {
+        Some(version) if dirs::version_dir(version).is_dir() => println!("default: {version}"),
+        Some(version) => problem(&format!(
+            "the default is {version}, which is not installed. Run `sne default <version>` to choose another"
+        )),
+        None => println!("default: not set (run `sne default <version>`)"),
+    }
+
     let path_entries: Vec<PathBuf> =
         std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default()).collect();
     match shell_link() {
-        None if super::default_on_path() => println!(
-            "this terminal: uses the default version; `sne use` changes it for every terminal \
-             (add the setup line from `sne env --help` to switch per terminal)"
-        ),
+        None if super::default_on_path() => {
+            println!(
+                "this terminal: uses the default version; `sne use` changes it for every terminal \
+                 (add the setup line from `sne env --help` to switch per terminal)"
+            );
+            if let Some(dir) = super::shadowing_node() {
+                problem(&format!(
+                    "another Node comes first on PATH: {}. Remove that folder from PATH",
+                    dir.display()
+                ));
+            }
+        }
         None => problem(
-            "Node from sne is not on PATH in this terminal. Open a new terminal; if it is still missing, \
-             run the sne installer again or add the setup line from `sne env --help`",
+            "Node from sne is not on PATH in this terminal. Run `sne use <version>` to add it, then \
+             open a new terminal; or add the setup line from `sne env --help`",
         ),
         Some(link) => {
             match link::version(&link) {
@@ -99,17 +110,4 @@ pub fn doctor() -> Result<()> {
     }
     super::update::hint();
     Ok(())
-}
-
-fn same_path(a: &Path, b: &Path) -> bool {
-    let normalize = |p: &Path| {
-        let text = p.to_string_lossy().replace('\\', "/");
-        let text = text.trim_end_matches('/').to_string();
-        if cfg!(windows) {
-            text.to_ascii_lowercase()
-        } else {
-            text
-        }
-    };
-    normalize(a) == normalize(b)
 }

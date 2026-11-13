@@ -14,7 +14,7 @@
 
 [Website](https://sne-sh.github.io/sne/) | [Documentation](docs/README.md) | [Changelog](CHANGELOG.md)
 
-> Status: beta (0.1.0-beta.3). The Windows build is tested end to end. The Linux and macOS code paths are
+> Status: beta (0.1.0-beta.4). The Windows build is tested end to end. The Linux and macOS code paths are
 > covered by the test suite in CI but have had less real-world use.
 
 ## Install
@@ -29,7 +29,7 @@ irm https://raw.githubusercontent.com/sne-sh/sne/main/install.ps1 | iex
 
 It downloads the latest release, checks its SHA-256, puts `sne.exe` in `%LOCALAPPDATA%\Programs\sne`, adds
 that folder to your `PATH`, and adds the setup line to your PowerShell profile. Set `SNE_NO_MODIFY_PATH=1`
-or `SNE_NO_PROFILE=1` first to skip either step, or `SNE_VERSION=0.1.0-beta.3` to pick a release.
+or `SNE_NO_PROFILE=1` first to skip either step, or `SNE_VERSION=0.1.0-beta.4` to pick a release.
 
 If you prefer a wizard, download a setup program from the
 [releases page](https://github.com/sne-sh/sne/releases). It does the same and adds an uninstaller.
@@ -56,7 +56,7 @@ curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | sh
 
 It needs no root. It downloads the latest release, checks its SHA-256, puts `sne` in `~/.local/bin` and
 adds the setup lines to your bash, zsh or fish profile. Set `SNE_INSTALL_DIR` to change the folder,
-`SNE_NO_PROFILE=1` to leave your profile alone, or `SNE_VERSION=0.1.0-beta.3` to pick a release.
+`SNE_NO_PROFILE=1` to leave your profile alone, or `SNE_VERSION=0.1.0-beta.4` to pick a release.
 
 Packages are on the [releases page](https://github.com/sne-sh/sne/releases) too. These install `sne`
 system-wide; add the shell setup line below afterwards.
@@ -155,6 +155,7 @@ decompressed as it arrives and never written to disk; on Windows the zip is unpa
 |---|---|---|
 | `SNE_DIR` | Where versions, aliases and the cache live | `%LOCALAPPDATA%\sne` on Windows, `$XDG_DATA_HOME/sne` or `~/.local/share/sne` elsewhere |
 | `SNE_NO_UPDATE_CHECK` | Set to `1` so `sne install` never looks for a new sne version | not set |
+| `SNE_NO_MODIFY_PATH` | Windows: set to `1` so `sne use`, `sne default` and `sne install` never add the default Node version to your `PATH` | not set |
 | `SNE_NODE_MIRROR` | Download mirror | `https://nodejs.org/dist` (musl Linux: `https://unofficial-builds.nodejs.org/download/release`) |
 
 ## Performance

@@ -10,6 +10,7 @@ downloads from.
 | `SNE_DIR` | Folder for installed versions, aliases and the cache | See below |
 | `SNE_NODE_MIRROR` | Base address for Node.js downloads | `https://nodejs.org/dist` |
 | `SNE_NO_UPDATE_CHECK` | Set to `1` to stop `sne install` from looking for a new sne version | Not set |
+| `SNE_NO_MODIFY_PATH` | Windows: set to `1` to stop `sne use`, `sne default` and `sne install` from adding the default Node version to your `PATH` | Not set |
 
 On Alpine and other musl-based Linux systems, the default mirror is
 `https://unofficial-builds.nodejs.org/download/release`, because nodejs.org does not publish musl
