@@ -15,6 +15,7 @@
 * [Aliases and the default version](guides/aliases.md)
 * [Coming from nvm or fnm](guides/migrating.md)
 * [Using sne in CI](guides/ci.md)
+* [New version notifications](guides/notifications.md)
 
 ## Reference
 

@@ -2,6 +2,7 @@ pub mod env;
 pub mod install;
 pub mod list;
 pub mod switch;
+pub mod update;
 
 use std::path::PathBuf;
 

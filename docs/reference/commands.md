@@ -21,6 +21,8 @@ version, you can use anything from the [version syntax](version-syntax.md).
 | [`sne env`](#sne-env) | Print the setup code for your shell |
 | [`sne completions`](#sne-completions) | Print a tab-completion script |
 | [`sne doctor`](#sne-doctor) | Check that sne is set up correctly |
+| [`sne self check`](#sne-self-check) | Look for a new version of sne |
+| [`sne notify`](#sne-notify) | Turn new version notifications on or off |
 
 ## sne install
 
@@ -178,3 +180,24 @@ sne doctor
 ```
 
 Checks the setup in this terminal and says what to fix. Run it first when something does not work.
+
+## sne self check
+
+```
+sne self check [--notify]
+```
+
+Asks GitHub whether a newer version of sne exists and prints the result.
+
+| Option | Effect |
+|---|---|
+| `--notify` | Also show a desktop notification, once per new version. The daily background check uses this. |
+
+## sne notify
+
+```
+sne notify [on|off]
+```
+
+Turns desktop notifications about new sne versions on or off. With no argument, shows the setting. See
+[New version notifications](../guides/notifications.md).

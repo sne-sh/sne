@@ -14,3 +14,5 @@ First release.
 - Windows builds for x64, x86 (32-bit) and ARM64, each as a setup wizard and a portable zip.
 - Linux and macOS: `install.sh`, a universal macOS `.pkg`, and `.deb`, `.rpm`, `.apk` and Arch packages.
 - Documentation in `docs/` (published with GitBook) and a project website in `site/`.
+- `sne self check` looks for a new sne version; `sne notify on` shows a desktop notification when one is
+  out (Task Scheduler, launchd or a systemd user timer). Off by default.

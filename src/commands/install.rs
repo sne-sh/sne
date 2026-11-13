@@ -16,6 +16,8 @@ use crate::{dirs, extract, index, link, platform, version_file};
 const PARALLEL_INSTALLS: usize = 4;
 
 pub fn run(specs: Vec<String>) -> Result<()> {
+    // Runs beside the install and never delays it.
+    super::update::refresh_in_background();
     let specs = if specs.is_empty() {
         let cwd = std::env::current_dir()?;
         let found = version_file::find(&cwd).context(
@@ -86,6 +88,7 @@ pub fn run(specs: Vec<String>) -> Result<()> {
     if failures > 0 {
         bail!("{failures} of {} installs failed", versions.len());
     }
+    super::update::hint();
     Ok(())
 }
 

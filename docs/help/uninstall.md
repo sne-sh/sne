@@ -2,7 +2,7 @@
 
 ## Update sne
 
-Run the installer again. It replaces the program and keeps your installed Node.js versions.
+Run `sne self check` to see whether a new version exists. To update, run the installer again. It replaces the program and keeps your installed Node.js versions.
 
 {% tabs %}
 {% tab title="Windows" %}
@@ -26,6 +26,9 @@ See the [changelog](https://github.com/sne-sh/sne/blob/main/CHANGELOG.md) for wh
 changed.
 
 ## Uninstall sne
+
+If you turned on [notifications](../guides/notifications.md), run `sne notify off` first. The Windows
+setup wizard's uninstaller does this for you.
 
 ### 1. Remove the program
 

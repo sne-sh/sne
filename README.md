@@ -115,6 +115,9 @@ sne which 20             # path to that version's node executable
 sne exec 20 -- npm test  # run one command with a specific version
 sne alias work 20        # name a version, then: sne use work
 sne uninstall 18
+
+sne self check           # is there a new version of sne?
+sne notify on            # desktop notification when a new sne is out
 ```
 
 A version can be written as `22`, `22.11`, `v22.11.0`, `latest`, `lts`, `lts/iron`, a range such as
@@ -148,6 +151,7 @@ decompressed as it arrives and never written to disk; on Windows the zip is unpa
 | Variable | Purpose | Default |
 |---|---|---|
 | `SNE_DIR` | Where versions, aliases and the cache live | `%LOCALAPPDATA%\sne` on Windows, `$XDG_DATA_HOME/sne` or `~/.local/share/sne` elsewhere |
+| `SNE_NO_UPDATE_CHECK` | Set to `1` so `sne install` never looks for a new sne version | not set |
 | `SNE_NODE_MIRROR` | Download mirror | `https://nodejs.org/dist` (musl Linux: `https://unofficial-builds.nodejs.org/download/release`) |
 
 ## Performance

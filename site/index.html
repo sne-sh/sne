@@ -266,7 +266,8 @@ sne ls                   <span class="c"># installed versions</span>
 sne ls-remote --lts      <span class="c"># versions you can install</span>
 sne exec 20 -- npm test  <span class="c"># run one command with another version</span>
 sne alias work 20        <span class="c"># name a version, then: sne use work</span>
-sne doctor               <span class="c"># check the setup</span></code></pre>
+sne doctor               <span class="c"># check the setup</span>
+sne notify on            <span class="c"># tell me when a new sne is out</span></code></pre>
       <p style="margin-top:28px">Inside a project, sne reads <code>.node-version</code>, then <code>.nvmrc</code>, then <code>engines.node</code> in <code>package.json</code>, so projects set up for nvm or fnm work as they are.</p>
     </section>
 

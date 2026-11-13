@@ -112,6 +112,7 @@ impl Env {
             .env("SNE_DIR", &self.data)
             .env("SNE_NODE_MIRROR", &self.mirror)
             .env("SNE_SHELL_LINK", &self.link)
+            .env("SNE_NO_UPDATE_CHECK", "1")
             .output()
             .unwrap()
     }
@@ -258,4 +259,31 @@ fn install_switch_and_uninstall() {
     assert!(version_dir("v20.5.0").join(&node).exists());
 
     fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn self_check_reports_a_newer_release() {
+    let run = |tag: &str| {
+        let body = format!(r#"{{"tag_name":"{tag}","name":"sne"}}"#).into_bytes();
+        let url = serve(HashMap::from([("/latest".to_string(), body)]));
+        let data = std::env::temp_dir().join(format!("sne-e2e-self-{}-{tag}", std::process::id()));
+        let _ = fs::remove_dir_all(&data);
+        let out = Command::new(env!("CARGO_BIN_EXE_sne"))
+            .args(["self", "check"])
+            .env("SNE_DIR", &data)
+            .env("SNE_RELEASES_URL", format!("{url}/latest"))
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+        let cached = fs::read_to_string(data.join("cache").join("sne-latest.txt")).unwrap();
+        let _ = fs::remove_dir_all(&data);
+        (String::from_utf8_lossy(&out.stdout).into_owned(), cached)
+    };
+
+    let (stdout, cached) = run("v999.0.0");
+    assert!(stdout.contains("sne v999.0.0 is available"), "{stdout}");
+    assert_eq!(cached, "v999.0.0");
+
+    let (stdout, _) = run("v0.0.1");
+    assert!(stdout.contains("is the latest version"), "{stdout}");
 }

@@ -51,6 +51,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 [Tasks]
 Name: "addtopath"; Description: "Add sne to PATH (needed to run it from any terminal)"
 Name: "psprofile"; Description: "Set up PowerShell: switch Node versions automatically (adds one line to your profile)"
+Name: "notify"; Description: "Tell me when a new version of sne is available (checks once a day)"; Flags: unchecked
 
 [Files]
 Source: "{#SourceExe}"; DestDir: "{app}"; Flags: ignoreversion
@@ -62,6 +63,11 @@ Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"
 [Run]
 Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\setup-profile.ps1"""; Flags: runhidden; Tasks: psprofile
 Filename: "pwsh.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\setup-profile.ps1"""; Flags: runhidden; Tasks: psprofile; Check: HasPwsh
+Filename: "{app}\sne.exe"; Parameters: "notify on"; Flags: runhidden; Tasks: notify
+
+[UninstallRun]
+; Removes the daily check, if it was turned on.
+Filename: "{app}\sne.exe"; Parameters: "notify off"; Flags: runhidden; RunOnceId: "SneNotifyOff"
 
 [Code]
 const

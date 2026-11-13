@@ -13,7 +13,7 @@ mod version_file;
 use anyhow::Result;
 use clap::{CommandFactory, Parser, Subcommand};
 
-use commands::{env, install, list, switch};
+use commands::{env, install, list, switch, update};
 
 /// Simple Node Environment: a fast, cross-platform Node.js version manager.
 #[derive(Parser)]
@@ -96,6 +96,35 @@ enum Cmd {
     Completions { shell: clap_complete::Shell },
     /// Check that sne is set up correctly in this shell.
     Doctor,
+    /// Commands about sne itself: `sne self check` looks for a new version.
+    #[command(name = "self")]
+    Own {
+        #[command(subcommand)]
+        action: OwnAction,
+    },
+    /// Desktop notifications about new sne versions: `sne notify on`, `sne notify off`.
+    ///
+    /// When on, sne checks once a day in the background. With no argument, shows the setting.
+    Notify {
+        #[arg(value_enum)]
+        state: Option<Toggle>,
+    },
+}
+
+#[derive(Subcommand)]
+enum OwnAction {
+    /// Ask GitHub whether a newer version of sne exists.
+    Check {
+        /// Also show a desktop notification, once per new version.
+        #[arg(long)]
+        notify: bool,
+    },
+}
+
+#[derive(Clone, Copy, clap::ValueEnum)]
+enum Toggle {
+    On,
+    Off,
 }
 
 fn run() -> Result<i32> {
@@ -117,6 +146,16 @@ fn run() -> Result<i32> {
             clap_complete::generate(shell, &mut Cli::command(), "sne", &mut std::io::stdout());
         }
         Cmd::Doctor => env::doctor()?,
+        Cmd::Own {
+            action: OwnAction::Check { notify },
+        } => update::check(notify)?,
+        Cmd::Notify {
+            state: Some(Toggle::On),
+        } => update::notify_on()?,
+        Cmd::Notify {
+            state: Some(Toggle::Off),
+        } => update::notify_off()?,
+        Cmd::Notify { state: None } => update::notify_status(),
     }
     Ok(0)
 }

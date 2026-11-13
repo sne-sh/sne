@@ -7,6 +7,7 @@
 #   SNE_INSTALL_DIR     where sne.exe goes (default: %LOCALAPPDATA%\Programs\sne)
 #   SNE_NO_MODIFY_PATH  set to 1 to leave PATH alone
 #   SNE_NO_PROFILE      set to 1 to leave the PowerShell profile alone
+#   SNE_NOTIFY          set to 1 to get a desktop notification when a new sne version is out
 
 function Install-Sne {
     $ErrorActionPreference = 'Stop'
@@ -88,6 +89,10 @@ function Install-Sne {
             Add-Content -LiteralPath $PROFILE -Value $line
             Write-Host "Added the sne setup line to $PROFILE"
         }
+    }
+
+    if ($env:SNE_NOTIFY -eq '1') {
+        & (Join-Path $installDir 'sne.exe') notify on
     }
 
     Write-Host ''

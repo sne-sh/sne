@@ -7,6 +7,7 @@
 #   SNE_VERSION         release tag to install, for example v0.1.0 (default: latest)
 #   SNE_INSTALL_DIR     where the sne binary goes (default: ~/.local/bin)
 #   SNE_NO_PROFILE      set to 1 to leave your shell profile alone
+#   SNE_NOTIFY          set to 1 to get a desktop notification when a new sne version is out
 
 set -eu
 
@@ -131,6 +132,10 @@ end"
                 echo "Your shell was not recognised. Add $install_dir to PATH and see the README for the setup line."
                 ;;
         esac
+    fi
+
+    if [ "${SNE_NOTIFY:-0}" = "1" ]; then
+        "$install_dir/sne" notify on || echo "Notifications were not turned on. Run: sne notify on"
     fi
 
     echo

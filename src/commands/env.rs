@@ -86,9 +86,11 @@ pub fn doctor() -> Result<()> {
             }
         }
     }
+    println!("{}", super::update::status_line());
     if problems == 0 {
         println!("no problems found");
     }
+    super::update::hint();
     Ok(())
 }
 
