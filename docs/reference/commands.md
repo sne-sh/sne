@@ -3,6 +3,24 @@
 Run `sne help` or `sne <command> --help` to see this in your terminal. Wherever a command takes a
 version, you can use anything from the [version syntax](version-syntax.md).
 
+## Short forms
+
+| Short | Same as |
+|---|---|
+| `sne -v` | `sne --version` |
+| `sne -h` | `sne --help` |
+| `sne i 22` | `sne install 22` |
+| `sne u 22` | `sne use 22` |
+| `sne d 22` | `sne default 22` |
+| `sne l` | `sne ls` |
+| `sne lr` | `sne ls-remote` |
+| `sne rm 18` | `sne uninstall 18` |
+| `sne c` | `sne current` |
+| `sne w 22` | `sne which 22` |
+| `sne x 20 -- npm test` | `sne exec 20 -- npm test` |
+| `sne up` | `sne update` |
+| `sne dr` | `sne doctor` |
+
 ## Summary
 
 | Command | What it does |

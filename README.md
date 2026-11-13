@@ -120,6 +120,9 @@ sne update               # update sne itself
 sne notify on            # desktop notification when a new sne is out
 ```
 
+Short forms exist for the common commands: `sne i 22`, `sne u 22`, `sne l`, `sne c`, `sne up`, and `sne -v` for
+the version. `sne -h` lists them all.
+
 A version can be written as `22`, `22.11`, `v22.11.0`, `latest`, `lts`, `lts/iron`, a range such as
 `>=20 <23`, or an alias.
 

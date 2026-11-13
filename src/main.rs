@@ -17,8 +17,11 @@ use commands::{env, install, list, switch, update};
 
 /// Simple Node Environment: a fast, cross-platform Node.js version manager.
 #[derive(Parser)]
-#[command(name = "sne", version)]
+#[command(name = "sne", version, disable_version_flag = true)]
 struct Cli {
+    /// Print version
+    #[arg(short = 'v', visible_short_alias = 'V', long = "version", action = clap::ArgAction::Version)]
+    print_version: Option<bool>,
     #[command(subcommand)]
     command: Cmd,
 }
@@ -29,11 +32,12 @@ enum Cmd {
     ///
     /// With no version, installs what the project asks for in .nvmrc, .node-version
     /// or package.json.
-    #[command(alias = "i")]
+    #[command(visible_alias = "i")]
     Install { versions: Vec<String> },
     /// Switch this shell to an installed version.
     ///
     /// With no version, uses what the project asks for.
+    #[command(visible_alias = "u")]
     Use {
         version: Option<String>,
         /// Used by the shell hook: switch only if the project asks for a different version.
@@ -41,12 +45,13 @@ enum Cmd {
         auto: bool,
     },
     /// Set the version that new shells start with.
+    #[command(visible_alias = "d")]
     Default { version: String },
     /// List installed versions.
-    #[command(alias = "list")]
+    #[command(visible_alias = "l", alias = "list")]
     Ls,
     /// List versions available to install.
-    #[command(name = "ls-remote", alias = "list-remote")]
+    #[command(name = "ls-remote", visible_alias = "lr", alias = "list-remote")]
     LsRemote {
         /// Only show versions matching this (`22`, `>=20`, `lts/iron`).
         filter: Option<String>,
@@ -55,13 +60,16 @@ enum Cmd {
         lts: bool,
     },
     /// Remove an installed version.
-    #[command(alias = "rm")]
+    #[command(visible_alias = "rm", alias = "un")]
     Uninstall { version: String },
     /// Show the version active in this shell.
+    #[command(visible_alias = "c")]
     Current,
     /// Show the path of the `node` executable for a version.
+    #[command(visible_alias = "w")]
     Which { version: Option<String> },
     /// Run a command with a specific version: `sne exec 20 -- npm test`.
+    #[command(visible_alias = "x")]
     Exec {
         version: String,
         #[arg(last = true, required = true)]
@@ -95,8 +103,10 @@ enum Cmd {
     /// Print a shell completion script.
     Completions { shell: clap_complete::Shell },
     /// Check that sne is set up correctly in this shell.
+    #[command(visible_alias = "dr")]
     Doctor,
     /// Update sne itself to the latest version.
+    #[command(visible_alias = "up")]
     Update,
     /// Commands about sne itself: `sne self check` looks for a new version.
     #[command(name = "self")]

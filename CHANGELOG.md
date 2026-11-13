@@ -6,6 +6,7 @@
 - `sne use` in a terminal without the setup line now switches the version for every terminal, where it used to stop with an error.
 - `install.ps1` sets up Windows PowerShell 5.1 and PowerShell 7 together.
 - The Linux packages add the default Node version to `PATH` for login shells.
+- Short forms: `sne -v` for the version, and one- or two-letter names for the common commands (`i`, `u`, `d`, `l`, `lr`, `rm`, `c`, `w`, `x`, `up`, `dr`).
 - Release notes come from this changelog.
 
 ## 0.1.0-beta.1 (2026-11-13)
