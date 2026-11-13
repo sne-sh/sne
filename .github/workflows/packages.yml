@@ -63,13 +63,18 @@ jobs:
           }
 
   homebrew:
-    name: Homebrew
-    runs-on: macos-latest
+    name: Homebrew (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
     env:
       HOMEBREW_NO_AUTO_UPDATE: 1
       HOMEBREW_NO_ANALYTICS: 1
     steps:
       - uses: actions/checkout@v4
+      - uses: Homebrew/actions/setup-homebrew@main
       - name: Install sne from the formula
         run: |
           version="$(sed -n 's/^  version "\(.*\)"$/\1/p' Formula/sne.rb)"
