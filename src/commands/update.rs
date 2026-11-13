@@ -53,9 +53,10 @@ fn write_version(path: &Path, version: &Version) {
 }
 
 /// The highest version among the published releases, with its tag exactly as published.
-/// Betas count: someone running a beta should hear about the next beta.
+/// Betas count only with `betas`: someone running a beta should hear about the next beta, and
+/// someone running a stable version should never be moved to one.
 /// Accepts GitHub's list of releases, or a single release object.
-fn tag_from_json(json: &str) -> Result<(Version, String)> {
+fn tag_from_json(json: &str, betas: bool) -> Result<(Version, String)> {
     let value: serde_json::Value = serde_json::from_str(json).context("unexpected answer from GitHub")?;
     let releases: Vec<&serde_json::Value> = match &value {
         serde_json::Value::Array(items) => items.iter().collect(),
@@ -68,6 +69,7 @@ fn tag_from_json(json: &str) -> Result<(Version, String)> {
             let tag = release["tag_name"].as_str()?;
             Some((parse_version(tag)?, tag.to_string()))
         })
+        .filter(|(version, _)| betas || !version.is_prerelease())
         .max_by(|a, b| a.0.cmp(&b.0))
         .ok_or_else(|| anyhow!("no published sne release was found"))
 }
@@ -77,7 +79,7 @@ fn fetch_latest() -> Result<(Version, String)> {
         .ok()
         .filter(|u| !u.trim().is_empty())
         .unwrap_or_else(|| RELEASES_API.to_string());
-    let latest = tag_from_json(&download::fetch_text(&url)?)?;
+    let latest = tag_from_json(&download::fetch_text(&url)?, running().is_prerelease())?;
     write_version(&latest_file(), &latest.0);
     Ok(latest)
 }
@@ -745,16 +747,16 @@ mod tests {
     #[test]
     fn reads_the_tag_of_the_latest_release() {
         let json = r#"{"url":"x","tag_name":"v1.4.2","name":"sne 1.4.2","draft":false}"#;
-        let (version, tag) = tag_from_json(json).unwrap();
+        let (version, tag) = tag_from_json(json, true).unwrap();
         assert_eq!(
             (version, tag.as_str()),
             (Version::parse("1.4.2").unwrap(), "v1.4.2")
         );
-        let (version, tag) = tag_from_json(r#"{"tag_name":"0.2.0-beta.1"}"#).unwrap();
+        let (version, tag) = tag_from_json(r#"{"tag_name":"0.2.0-beta.1"}"#, true).unwrap();
         assert_eq!(tag, "0.2.0-beta.1");
         assert!(version > Version::parse("0.1.0").unwrap());
         assert!(version < Version::parse("0.2.0").unwrap());
-        assert!(tag_from_json(r#"{"message":"Not Found"}"#).is_err());
+        assert!(tag_from_json(r#"{"message":"Not Found"}"#, true).is_err());
 
         // From a list, the highest version wins, betas count and drafts do not.
         let list = r#"[
@@ -764,8 +766,12 @@ mod tests {
             {"tag_name":"0.2.0-beta.2","prerelease":true},
             {"tag_name":"not-a-version"}
         ]"#;
-        assert_eq!(tag_from_json(list).unwrap().1, "0.2.0-beta.2");
-        assert!(tag_from_json("[]").is_err());
-        assert!(tag_from_json(r#"{"tag_name":"nightly"}"#).is_err());
+        assert_eq!(tag_from_json(list, true).unwrap().1, "0.2.0-beta.2");
+        assert!(tag_from_json("[]", true).is_err());
+        assert!(tag_from_json(r#"{"tag_name":"nightly"}"#, true).is_err());
+
+        // A stable sne is offered stable releases only, even when a newer beta exists.
+        assert_eq!(tag_from_json(list, false).unwrap().1, "0.1.0");
+        assert!(tag_from_json(r#"[{"tag_name":"0.2.0-beta.1"}]"#, false).is_err());
     }
 }

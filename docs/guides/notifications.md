@@ -10,6 +10,8 @@ sne self check
 ```
 
 This asks GitHub for the latest release and prints either that you are up to date, or the new version.
+A beta version of sne is told about newer betas too. A stable version is told about stable releases
+only, so `sne update` never moves it to a beta.
 
 ## Update
 
