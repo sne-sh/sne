@@ -69,6 +69,23 @@ pub fn doctor() -> Result<()> {
         None => println!("default: not set (run `sne default <version>`)"),
     }
 
+    // Whoever can write to the data folder can replace the `node` you run.
+    #[cfg(unix)]
+    for dir in [dirs::base(), dirs::versions(), dirs::aliases(), dirs::shells()] {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(meta) = fs::symlink_metadata(&dir)
+            && meta.is_dir()
+            && meta.permissions().mode() & 0o022 != 0
+        {
+            problem(&format!(
+                "other users can write to {}, so they could replace the Node.js you run. \
+                 Fix it with: chmod go-w '{}'",
+                dir.display(),
+                dir.display()
+            ));
+        }
+    }
+
     let path_entries: Vec<PathBuf> =
         std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default()).collect();
     match shell_link() {

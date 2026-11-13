@@ -295,6 +295,17 @@ fn install_switch_and_uninstall() {
     let doctor = env.ok(&root, &["doctor"]);
     assert!(doctor.contains("default: not set"), "{doctor}");
 
+    // A data folder that other users can write to is reported.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let versions = env.data.join("versions");
+        fs::set_permissions(&versions, fs::Permissions::from_mode(0o777)).unwrap();
+        let doctor = env.ok(&root, &["doctor"]);
+        assert!(doctor.contains("other users can write to"), "{doctor}");
+        fs::set_permissions(&versions, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+
     fs::remove_dir_all(&root).unwrap();
 }
 
