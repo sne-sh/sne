@@ -1,7 +1,7 @@
-//! Finding out about new versions of sne itself: `sne self check` and `sne notify`.
+//! New versions of sne itself: `sne update`, `sne self check` and `sne notify`.
 //!
 //! Nothing here runs from `sne use`, `sne env` or the cd hook. The network is used only by
-//! `sne self check` and, in the background, by `sne install`.
+//! `sne update`, `sne self check` and, in the background, by `sne install`.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -10,24 +10,26 @@ use std::time::{Duration, SystemTime};
 
 use anyhow::{Context, Result, anyhow, bail};
 
-use crate::version::Version;
+use node_semver::Version;
+use sha2::{Digest, Sha256};
+
 use crate::{dirs, download};
 
 const LATEST_RELEASE_API: &str = "https://api.github.com/repos/sne-sh/sne/releases/latest";
 const RELEASES_PAGE: &str = "https://github.com/sne-sh/sne/releases/latest";
+const RELEASE_DOWNLOADS: &str = "https://github.com/sne-sh/sne/releases/download";
 /// `sne install` asks GitHub again only when the last answer is older than this.
 const FRESH_FOR: Duration = Duration::from_secs(24 * 60 * 60);
 
+/// sne's own version. Unlike Node versions it can carry a pre-release part, such as `0.1.0-beta.1`.
 fn running() -> Version {
-    Version::parse(env!("CARGO_PKG_VERSION")).expect("the crate version is a full version")
+    Version::parse(env!("CARGO_PKG_VERSION")).expect("the crate version is valid")
 }
 
-fn update_command() -> &'static str {
-    if cfg!(windows) {
-        "irm https://raw.githubusercontent.com/sne-sh/sne/main/install.ps1 | iex"
-    } else {
-        "curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | sh"
-    }
+/// Accepts a release tag with or without a leading `v`.
+fn parse_version(text: &str) -> Option<Version> {
+    let text = text.trim();
+    Version::parse(text.strip_prefix('v').unwrap_or(text)).ok()
 }
 
 /// Last version GitHub reported. The file's modification time is when it was asked.
@@ -41,29 +43,32 @@ fn notified_file() -> PathBuf {
 }
 
 fn read_version(path: &Path) -> Option<Version> {
-    Version::parse(&fs::read_to_string(path).ok()?)
+    parse_version(&fs::read_to_string(path).ok()?)
 }
 
-fn write_version(path: &Path, version: Version) {
+fn write_version(path: &Path, version: &Version) {
     let _ = fs::create_dir_all(dirs::cache());
     let _ = fs::write(path, version.to_string());
 }
 
-fn tag_from_json(json: &str) -> Result<Version> {
+/// The version of the latest release and its tag exactly as published.
+fn tag_from_json(json: &str) -> Result<(Version, String)> {
     let value: serde_json::Value = serde_json::from_str(json).context("unexpected answer from GitHub")?;
     let tag = value["tag_name"]
         .as_str()
         .ok_or_else(|| anyhow!("the latest release has no tag name"))?;
-    Version::parse(tag).ok_or_else(|| anyhow!("the latest release tag `{tag}` is not a version"))
+    let version =
+        parse_version(tag).ok_or_else(|| anyhow!("the latest release tag `{tag}` is not a version"))?;
+    Ok((version, tag.to_string()))
 }
 
-fn fetch_latest() -> Result<Version> {
+fn fetch_latest() -> Result<(Version, String)> {
     let url = std::env::var("SNE_RELEASES_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
         .unwrap_or_else(|| LATEST_RELEASE_API.to_string());
     let latest = tag_from_json(&download::fetch_text(&url)?)?;
-    write_version(&latest_file(), latest);
+    write_version(&latest_file(), &latest.0);
     Ok(latest)
 }
 
@@ -102,32 +107,181 @@ pub fn hint() {
     }
     if let Some(latest) = newer_known() {
         println!(
-            "sne {latest} is available (you have {}). Update: {}",
-            running(),
-            update_command()
+            "sne {latest} is available (you have {}). Run `sne update` to install it.",
+            running()
         );
     }
 }
 
 /// `sne self check`
 pub fn check(notify: bool) -> Result<()> {
-    let latest = fetch_latest().context("could not check for a new sne version")?;
+    remove_replaced_program();
+    let (latest, _) = fetch_latest().context("could not check for a new sne version")?;
     let running = running();
     if latest <= running {
         println!("sne {running} is the latest version");
         return Ok(());
     }
     println!("sne {latest} is available (you have {running})");
-    println!("Update:       {}", update_command());
+    println!("Update:       sne update");
     println!("What changed: {RELEASES_PAGE}");
-    if notify && read_version(&notified_file()) != Some(latest) {
+    if notify && read_version(&notified_file()).as_ref() != Some(&latest) {
         os::show(
-            &format!("sne {latest} is available"),
-            &format!("You have {running}. Run the sne installer again to update."),
+            &format!("sne {latest} is ready to install"),
+            &format!("You have {running}. To update, open a terminal and run: sne update"),
+            logo_file().as_deref(),
         )
         .context("could not show a desktop notification")?;
-        write_version(&notified_file(), latest);
+        write_version(&notified_file(), &latest);
     }
+    Ok(())
+}
+
+/// The sne logo as a file, for notifications. It is stored inside the program and written out once.
+fn logo_file() -> Option<PathBuf> {
+    const LOGO: &[u8] = include_bytes!("../../assets/logo-256.png");
+    let file = dirs::cache().join("sne-logo.png");
+    if fs::metadata(&file).is_ok_and(|m| m.len() == LOGO.len() as u64) {
+        return Some(file);
+    }
+    fs::create_dir_all(dirs::cache()).ok()?;
+    fs::write(&file, LOGO).ok()?;
+    Some(file)
+}
+
+/// The release file built for this system. Linux always uses the static musl build.
+fn release_target() -> Result<&'static str> {
+    Ok(match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("windows", "x86_64") => "x86_64-pc-windows-msvc",
+        ("windows", "x86") => "i686-pc-windows-msvc",
+        ("windows", "aarch64") => "aarch64-pc-windows-msvc",
+        ("macos", "x86_64") => "x86_64-apple-darwin",
+        ("macos", "aarch64") => "aarch64-apple-darwin",
+        ("linux", "x86_64") => "x86_64-unknown-linux-musl",
+        ("linux", "aarch64") => "aarch64-unknown-linux-musl",
+        (os, arch) => bail!("there is no sne release for {os} on {arch}; build the new version from source"),
+    })
+}
+
+/// `sne update`
+pub fn update() -> Result<()> {
+    remove_replaced_program();
+    let (latest, tag) = fetch_latest().context("could not check for a new sne version")?;
+    let running = running();
+    if latest <= running {
+        println!("sne {running} is the latest version");
+        return Ok(());
+    }
+    let exe = std::env::current_exe()
+        .and_then(|exe| exe.canonicalize())
+        .context("could not find the sne program")?;
+    println!("Downloading sne {latest}...");
+    let work = dirs::cache().join(format!("sne-update-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&work);
+    fs::create_dir_all(&work)?;
+    let result = download_release(&tag, &work).and_then(|new| {
+        replace_program(&new, &exe).with_context(|| {
+            format!(
+                "could not replace {}. If sne came from a package or needs administrator rights there, \
+                 update it the way it was installed",
+                exe.display()
+            )
+        })
+    });
+    let _ = fs::remove_dir_all(&work);
+    result?;
+    println!("Updated sne from {running} to {latest}");
+    println!("What changed: {RELEASES_PAGE}");
+    Ok(())
+}
+
+/// Downloads the release archive for this system into `work`, checks its SHA-256 against the
+/// release's `SHA256SUMS.txt`, unpacks it and returns the path of the new program.
+fn download_release(tag: &str, work: &Path) -> Result<PathBuf> {
+    let target = release_target()?;
+    let folder = format!("sne-{tag}-{target}");
+    let archive = format!("{folder}.{}", if cfg!(windows) { "zip" } else { "tar.gz" });
+    let base = std::env::var("SNE_DOWNLOAD_BASE")
+        .ok()
+        .filter(|b| !b.trim().is_empty())
+        .unwrap_or_else(|| RELEASE_DOWNLOADS.to_string());
+    let base = format!("{}/{tag}", base.trim_end_matches('/'));
+
+    let sums = download::fetch_text(&format!("{base}/SHA256SUMS.txt"))?;
+    let expected = sums
+        .lines()
+        .find_map(|line| {
+            let mut parts = line.split_whitespace();
+            let (hash, name) = (parts.next()?, parts.next()?);
+            (name.trim_start_matches('*') == archive).then(|| hash.to_ascii_lowercase())
+        })
+        .ok_or_else(|| anyhow!("{archive} is not listed in SHA256SUMS.txt"))?;
+
+    let mut bytes = Vec::new();
+    let (mut body, _) = download::open(&format!("{base}/{archive}"))?;
+    std::io::Read::read_to_end(&mut body, &mut bytes).context("the download was interrupted")?;
+    let actual: String = Sha256::digest(&bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    if actual != expected {
+        bail!("checksum mismatch for {archive}; nothing was changed");
+    }
+
+    let file = work.join(&archive);
+    fs::write(&file, bytes)?;
+    #[cfg(windows)]
+    // unzip drops the archive's top folder, so put it back.
+    crate::extract::unzip(&file, &work.join(&folder))?;
+    #[cfg(not(windows))]
+    run(Command::new("tar").arg("-xzf").arg(&file).arg("-C").arg(work))?;
+
+    let name = if cfg!(windows) { "sne.exe" } else { "sne" };
+    let new = work.join(&folder).join(name);
+    if !new.is_file() {
+        bail!("{name} was not found inside {archive}");
+    }
+    Ok(new)
+}
+
+/// Where the running program is parked on Windows while the new one takes its place.
+fn replaced_program(exe: &Path) -> PathBuf {
+    exe.with_extension("old")
+}
+
+/// Windows cannot delete a program that is running, so the old one is removed on a later run.
+fn remove_replaced_program() {
+    if cfg!(windows)
+        && let Ok(exe) = std::env::current_exe()
+    {
+        let _ = fs::remove_file(replaced_program(&exe));
+    }
+}
+
+#[cfg(windows)]
+fn replace_program(new: &Path, exe: &Path) -> Result<()> {
+    // A running program can be renamed, but not overwritten.
+    let old = replaced_program(exe);
+    let _ = fs::remove_file(&old);
+    fs::rename(exe, &old)?;
+    if let Err(err) = fs::copy(new, exe) {
+        let _ = fs::rename(&old, exe);
+        return Err(err.into());
+    }
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn replace_program(new: &Path, exe: &Path) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    // Copy next to the program, then rename over it, so there is never a half-written sne.
+    let staged = exe.with_file_name(".sne.new");
+    fs::copy(new, &staged)?;
+    fs::set_permissions(&staged, fs::Permissions::from_mode(0o755))?;
+    fs::rename(&staged, exe).inspect_err(|_| {
+        let _ = fs::remove_file(&staged);
+    })?;
     Ok(())
 }
 
@@ -193,21 +347,25 @@ mod os {
     /// the releases page when clicked. Texts arrive through environment variables.
     const TOAST_SCRIPT: &str = r#"
 $ErrorActionPreference = 'Stop'
+function Esc($text) { [System.Security.SecurityElement]::Escape($text) }
 $id = 'sne.sne'
 $key = "HKCU:\Software\Classes\AppUserModelId\$id"
 if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
 Set-ItemProperty -Path $key -Name DisplayName -Value 'sne'
-if ($env:SNE_TOAST_ICON) { Set-ItemProperty -Path $key -Name IconUri -Value $env:SNE_TOAST_ICON }
+$logo = ''
+if ($env:SNE_TOAST_ICON) {
+    Set-ItemProperty -Path $key -Name IconUri -Value $env:SNE_TOAST_ICON
+    $logo = "<image placement='appLogoOverride' src='$(Esc ([Uri]$env:SNE_TOAST_ICON).AbsoluteUri)'/>"
+}
 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
 [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
-function Esc($text) { [System.Security.SecurityElement]::Escape($text) }
 $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-$xml.LoadXml("<toast activationType='protocol' launch='$(Esc $env:SNE_TOAST_URL)'><visual><binding template='ToastGeneric'><text>$(Esc $env:SNE_TOAST_TITLE)</text><text>$(Esc $env:SNE_TOAST_BODY)</text></binding></visual></toast>")
+$xml.LoadXml("<toast activationType='protocol' launch='$(Esc $env:SNE_TOAST_URL)'><visual><binding template='ToastGeneric'>$logo<text>$(Esc $env:SNE_TOAST_TITLE)</text><text>$(Esc $env:SNE_TOAST_BODY)</text></binding></visual><actions><action content='See what is new' activationType='protocol' arguments='$(Esc $env:SNE_TOAST_URL)'/></actions></toast>")
 $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($id).Show($toast)
 "#;
 
-    pub fn show(title: &str, body: &str) -> Result<()> {
+    pub fn show(title: &str, body: &str, logo: Option<&Path>) -> Result<()> {
         // Windows PowerShell (not PowerShell 7) is on every Windows 10 and 11 and can load WinRT types.
         let mut command = Command::new("powershell.exe");
         command
@@ -217,13 +375,8 @@ $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
             .env("SNE_TOAST_BODY", body)
             .env("SNE_TOAST_URL", RELEASES_PAGE)
             .creation_flags(CREATE_NO_WINDOW);
-        // The setup wizard puts the icon next to the program.
-        if let Some(icon) = std::env::current_exe()
-            .ok()
-            .map(|exe| exe.with_file_name("sne.ico"))
-            .filter(|icon| icon.is_file())
-        {
-            command.env("SNE_TOAST_ICON", icon);
+        if let Some(logo) = logo {
+            command.env("SNE_TOAST_ICON", logo);
         }
         run(&mut command)
     }
@@ -355,9 +508,16 @@ mod os {
 
     const LABEL: &str = "io.github.sne-sh.sne.update-check";
 
-    pub fn show(title: &str, body: &str) -> Result<()> {
+    /// Notification Center shows the icon of the program that sends the message, which for a
+    /// script is always the system's own, so the logo cannot be used here.
+    pub fn show(title: &str, body: &str, _logo: Option<&Path>) -> Result<()> {
         let quote = |text: &str| format!("\"{}\"", text.replace('\\', "\\\\").replace('"', "\\\""));
-        let script = format!("display notification {} with title {}", quote(body), quote(title));
+        let script = format!(
+            "display notification {} with title {} subtitle {}",
+            quote(body),
+            quote("sne"),
+            quote(title)
+        );
         run(Command::new("osascript").args(["-e", &script]))
     }
 
@@ -448,8 +608,13 @@ mod os {
 
     const UNIT: &str = "sne-update-check";
 
-    pub fn show(title: &str, body: &str) -> Result<()> {
-        run(Command::new("notify-send").args(["--app-name=sne", title, body]))
+    pub fn show(title: &str, body: &str, logo: Option<&Path>) -> Result<()> {
+        let mut command = Command::new("notify-send");
+        command.arg("--app-name=sne");
+        if let Some(logo) = logo {
+            command.arg(format!("--icon={}", logo.display()));
+        }
+        run(command.args([title, body]))
             .context("`notify-send` is needed for desktop notifications (package libnotify)")
     }
 
@@ -514,7 +679,15 @@ mod tests {
     #[test]
     fn reads_the_tag_of_the_latest_release() {
         let json = r#"{"url":"x","tag_name":"v1.4.2","name":"sne 1.4.2","draft":false}"#;
-        assert_eq!(tag_from_json(json).unwrap(), Version::parse("1.4.2").unwrap());
+        let (version, tag) = tag_from_json(json).unwrap();
+        assert_eq!(
+            (version, tag.as_str()),
+            (Version::parse("1.4.2").unwrap(), "v1.4.2")
+        );
+        let (version, tag) = tag_from_json(r#"{"tag_name":"0.2.0-beta.1"}"#).unwrap();
+        assert_eq!(tag, "0.2.0-beta.1");
+        assert!(version > Version::parse("0.1.0").unwrap());
+        assert!(version < Version::parse("0.2.0").unwrap());
         assert!(tag_from_json(r#"{"message":"Not Found"}"#).is_err());
         assert!(tag_from_json(r#"{"tag_name":"nightly"}"#).is_err());
     }

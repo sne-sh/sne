@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.1.0 (2026-11-13)
+## 0.1.0-beta.1 (2026-11-13)
 
-First release.
+First public release, as a beta.
 
 - `install`, `use`, `default`, `ls`, `ls-remote`, `uninstall`, `current`, `which`, `exec`, `alias`,
   `unalias`, `env`, `completions`, `doctor`.
@@ -16,3 +16,4 @@ First release.
 - Documentation in `docs/` (published with GitBook) and a project website in `site/`.
 - `sne self check` looks for a new sne version; `sne notify on` shows a desktop notification when one is
   out (Task Scheduler, launchd or a systemd user timer). Off by default.
+- `sne update` replaces sne with the latest release, after checking its SHA-256.

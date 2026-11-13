@@ -14,7 +14,7 @@
 
 [Website](https://sne-sh.github.io/sne/) | [Documentation](docs/README.md) | [Changelog](CHANGELOG.md)
 
-> Status: early (0.1.0). The Windows build is tested end to end. The Linux and macOS code paths are
+> Status: beta (0.1.0-beta.1). The Windows build is tested end to end. The Linux and macOS code paths are
 > covered by the test suite in CI but have had less real-world use.
 
 ## Install
@@ -29,7 +29,7 @@ irm https://raw.githubusercontent.com/sne-sh/sne/main/install.ps1 | iex
 
 It downloads the latest release, checks its SHA-256, puts `sne.exe` in `%LOCALAPPDATA%\Programs\sne`, adds
 that folder to your `PATH`, and adds the setup line to your PowerShell profile. Set `SNE_NO_MODIFY_PATH=1`
-or `SNE_NO_PROFILE=1` first to skip either step, or `SNE_VERSION=v0.1.0` to pick a release.
+or `SNE_NO_PROFILE=1` first to skip either step, or `SNE_VERSION=0.1.0-beta.1` to pick a release.
 
 If you prefer a wizard, download a setup program from the
 [releases page](https://github.com/sne-sh/sne/releases). It does the same and adds an uninstaller.
@@ -37,9 +37,9 @@ The installers are not code-signed yet, so Windows SmartScreen will ask you to c
 
 | Your Windows | Setup wizard | Portable (unzip and run) |
 |---|---|---|
-| 64-bit (most PCs) | `sne-<version>-x64-setup.exe` | `sne-v<version>-x86_64-pc-windows-msvc.zip` |
-| 32-bit | `sne-<version>-x86-setup.exe` | `sne-v<version>-i686-pc-windows-msvc.zip` |
-| ARM64 | `sne-<version>-arm64-setup.exe` | `sne-v<version>-aarch64-pc-windows-msvc.zip` |
+| 64-bit (most PCs) | `sne-<version>-x64-setup.exe` | `sne-<version>-x86_64-pc-windows-msvc.zip` |
+| 32-bit | `sne-<version>-x86-setup.exe` | `sne-<version>-i686-pc-windows-msvc.zip` |
+| ARM64 | `sne-<version>-arm64-setup.exe` | `sne-<version>-aarch64-pc-windows-msvc.zip` |
 
 The portable zip holds only `sne.exe`: put it anywhere and add the shell setup line below yourself.
 Node.js stopped publishing 32-bit Windows builds after version 22, so 32-bit Windows can install
@@ -56,7 +56,7 @@ curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | sh
 
 It needs no root. It downloads the latest release, checks its SHA-256, puts `sne` in `~/.local/bin` and
 adds the setup lines to your bash, zsh or fish profile. Set `SNE_INSTALL_DIR` to change the folder,
-`SNE_NO_PROFILE=1` to leave your profile alone, or `SNE_VERSION=v0.1.0` to pick a release.
+`SNE_NO_PROFILE=1` to leave your profile alone, or `SNE_VERSION=0.1.0-beta.1` to pick a release.
 
 Packages are on the [releases page](https://github.com/sne-sh/sne/releases) too. These install `sne`
 system-wide; add the shell setup line below afterwards.
@@ -68,7 +68,7 @@ system-wide; add the shell setup line below afterwards.
 | Fedora, RHEL, openSUSE | `sne-<version>-1.x86_64.rpm` / `.aarch64.rpm` | `sudo rpm -i <file>` |
 | Alpine | `sne_<version>_x86_64.apk` / `_aarch64.apk` | `sudo apk add --allow-untrusted <file>` |
 | Arch | `sne-<version>-1-x86_64.pkg.tar.zst` / `-aarch64` | `sudo pacman -U <file>` |
-| Any (portable) | `sne-v<version>-<target>.tar.gz` | unpack and put `sne` on your `PATH` |
+| Any (portable) | `sne-<version>-<target>.tar.gz` | unpack and put `sne` on your `PATH` |
 
 The macOS package is not signed yet: use the command above, or right-click it in Finder and choose Open.
 Every file is listed with its SHA-256 in `SHA256SUMS.txt`.
@@ -116,7 +116,7 @@ sne exec 20 -- npm test  # run one command with a specific version
 sne alias work 20        # name a version, then: sne use work
 sne uninstall 18
 
-sne self check           # is there a new version of sne?
+sne update               # update sne itself
 sne notify on            # desktop notification when a new sne is out
 ```
 

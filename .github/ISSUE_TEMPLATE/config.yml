@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or help
+    url: https://github.com/sne-sh/sne/discussions
+    about: Ask how to do something, or show what you built.
+  - name: Security problem
+    url: https://github.com/sne-sh/sne/security/advisories/new
+    about: Report a vulnerability privately. Do not open a public issue.
+  - name: Documentation
+    url: https://github.com/sne-sh/sne/tree/main/docs
+    about: Installation, shell setup, commands and troubleshooting.

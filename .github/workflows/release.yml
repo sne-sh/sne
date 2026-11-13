@@ -1,11 +1,11 @@
 name: Release
 
-# Pushing a tag such as v0.1.0 runs every check, then builds every installer and attaches them to a
+# Pushing a tag such as 0.1.0 or 0.2.0-beta.1 runs every check, then builds every installer and attaches them to a
 # draft release. A manual run, or a push to the release-dry-run branch, does the same without creating
 # a release: the files are kept as the "release-files" artifact of the run.
 on:
   push:
-    tags: ["v*.*.*"]
+    tags: ["[0-9]+.[0-9]+.[0-9]+*"]
     branches: [release-dry-run]
   workflow_dispatch:
 
@@ -29,10 +29,10 @@ jobs:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
       - name: Tag matches Cargo.toml
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.ref_type == 'tag'
         shell: bash
         run: |
-          cargo_version="v$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)"
+          cargo_version="$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)"
           if [[ "$cargo_version" != "$GITHUB_REF_NAME" ]]; then
             echo "::error::Tag $GITHUB_REF_NAME does not match Cargo.toml ($cargo_version)"
             exit 1
@@ -59,7 +59,7 @@ jobs:
           targets: ${{ matrix.target }}
       - name: Version
         shell: bash
-        run: echo "TAG=v$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
+        run: echo "TAG=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
       - run: cargo build --release --target ${{ matrix.target }}
       - name: Portable zip
         shell: pwsh
@@ -73,7 +73,7 @@ jobs:
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y }
-          $version = $env:TAG.TrimStart('v')
+          $version = $env:TAG
           & $iscc "/DAppVersion=$version" "/DArch=${{ matrix.arch }}" "/DSourceExe=..\target\${{ matrix.target }}\release\sne.exe" installer\sne.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item target\installer\*-setup.exe .
@@ -104,7 +104,7 @@ jobs:
         with:
           targets: x86_64-apple-darwin,aarch64-apple-darwin
       - name: Version
-        run: echo "TAG=v$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
+        run: echo "TAG=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
       - name: Build and package both processors
         run: |
           for target in x86_64-apple-darwin aarch64-apple-darwin; do
@@ -120,8 +120,8 @@ jobs:
           lipo -create -output pkgroot/usr/local/bin/sne \
             target/x86_64-apple-darwin/release/sne target/aarch64-apple-darwin/release/sne
           chmod 755 pkgroot/usr/local/bin/sne
-          pkgbuild --root pkgroot --identifier io.github.sne-sh.sne --version "${TAG#v}" \
-            --install-location / "sne-${TAG#v}-macos-universal.pkg"
+          pkgbuild --root pkgroot --identifier io.github.sne-sh.sne --version "$TAG" \
+            --install-location / "sne-$TAG-macos-universal.pkg"
       - name: Try the package
         run: |
           sudo installer -pkg sne-*-macos-universal.pkg -target /
@@ -155,7 +155,7 @@ jobs:
         if: contains(matrix.target, 'musl')
         run: sudo apt-get update && sudo apt-get install -y musl-tools
       - name: Version
-        run: echo "TAG=v$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
+        run: echo "TAG=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
       - run: cargo build --release --target ${{ matrix.target }}
       - name: Package
         run: |
@@ -180,12 +180,12 @@ jobs:
           path: dist
           merge-multiple: true
       - name: Version
-        run: echo "TAG=v$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
+        run: echo "TAG=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
       - name: Linux packages (deb, rpm, apk, Arch)
         run: |
           go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
           export PATH="$(go env GOPATH)/bin:$PATH"
-          export VERSION="${TAG#v}"
+          export VERSION="$TAG"
           for pair in x86_64:amd64 aarch64:arm64; do
             cpu="${pair%%:*}"
             export ARCH="${pair##*:}"
@@ -217,7 +217,7 @@ jobs:
           name: release-files
           path: dist/*
       - name: Create draft release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --draft --generate-notes

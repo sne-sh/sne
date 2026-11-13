@@ -1,6 +1,6 @@
 [package]
 name = "sne"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 edition = "2024"
 description = "Simple Node Environment: a fast, cross-platform Node.js version manager"
 license = "MIT"

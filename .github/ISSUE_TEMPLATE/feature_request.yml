@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest something sne should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation you are in, not the solution yet.
+      placeholder: When I work on two projects at once, I have to ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like sne to do?
+      description: A command, an option, a behaviour. Show how you would use it.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today instead?
+      description: Workarounds, or how another tool handles it.
+  - type: checkboxes
+    id: hot-path
+    attributes:
+      label: Speed
+      description: sne keeps `sne use`, `sne env` and the cd hook free of network access and heavy work.
+      options:
+        - label: This would not add work to `sne use`, `sne env` or the cd hook, or I explain the cost above.
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Would you like to build it?
+      options:
+        - label: I can open a pull request for this.

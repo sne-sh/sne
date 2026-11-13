@@ -280,10 +280,107 @@ fn self_check_reports_a_newer_release() {
         (String::from_utf8_lossy(&out.stdout).into_owned(), cached)
     };
 
-    let (stdout, cached) = run("v999.0.0");
-    assert!(stdout.contains("sne v999.0.0 is available"), "{stdout}");
-    assert_eq!(cached, "v999.0.0");
+    let (stdout, cached) = run("999.0.0");
+    assert!(stdout.contains("sne 999.0.0 is available"), "{stdout}");
+    assert_eq!(cached, "999.0.0");
 
-    let (stdout, _) = run("v0.0.1");
+    // Tags with a leading `v` are understood too.
+    let (stdout, cached) = run("v999.1.0-beta.2");
+    assert!(stdout.contains("sne 999.1.0-beta.2 is available"), "{stdout}");
+    assert_eq!(cached, "999.1.0-beta.2");
+
+    let (stdout, _) = run("0.0.1");
     assert!(stdout.contains("is the latest version"), "{stdout}");
+}
+
+/// Name of the release build for the machine running the tests, as `sne update` works it out.
+fn release_target() -> Option<&'static str> {
+    Some(match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("windows", "x86_64") => "x86_64-pc-windows-msvc",
+        ("windows", "x86") => "i686-pc-windows-msvc",
+        ("windows", "aarch64") => "aarch64-pc-windows-msvc",
+        ("macos", "x86_64") => "x86_64-apple-darwin",
+        ("macos", "aarch64") => "aarch64-apple-darwin",
+        ("linux", "x86_64") => "x86_64-unknown-linux-musl",
+        ("linux", "aarch64") => "aarch64-unknown-linux-musl",
+        _ => return None,
+    })
+}
+
+/// A release archive in the platform's format that holds `program` as the sne binary.
+#[cfg(windows)]
+fn release_archive(folder: &str, program: &[u8], _scratch: &Path) -> (String, Vec<u8>) {
+    let mut zip = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    zip.start_file(
+        format!("{folder}/sne.exe"),
+        zip::write::SimpleFileOptions::default(),
+    )
+    .unwrap();
+    zip.write_all(program).unwrap();
+    (format!("{folder}.zip"), zip.finish().unwrap().into_inner())
+}
+
+#[cfg(not(windows))]
+fn release_archive(folder: &str, program: &[u8], scratch: &Path) -> (String, Vec<u8>) {
+    let stage = scratch.join("stage");
+    fs::create_dir_all(stage.join(folder)).unwrap();
+    fs::write(stage.join(folder).join("sne"), program).unwrap();
+    let archive = scratch.join(format!("{folder}.tar.gz"));
+    let status = Command::new("tar")
+        .arg("-czf")
+        .arg(&archive)
+        .arg("-C")
+        .arg(&stage)
+        .arg(folder)
+        .status()
+        .unwrap();
+    assert!(status.success());
+    (format!("{folder}.tar.gz"), fs::read(archive).unwrap())
+}
+
+#[test]
+fn update_replaces_the_program_after_checking_it() {
+    let Some(target) = release_target() else { return };
+    let scratch = std::env::temp_dir().join(format!("sne-e2e-update-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&scratch);
+    fs::create_dir_all(&scratch).unwrap();
+
+    // `sne update` replaces the program that runs it, so it gets its own copy.
+    let exe = scratch.join(if cfg!(windows) { "sne.exe" } else { "sne" });
+    fs::copy(env!("CARGO_BIN_EXE_sne"), &exe).unwrap();
+    let original = fs::read(&exe).unwrap();
+
+    let tag = "999.0.0";
+    let new_program = b"the new sne".to_vec();
+    let (archive, bytes) = release_archive(&format!("sne-{tag}-{target}"), &new_program, &scratch);
+    let latest = format!(r#"{{"tag_name":"{tag}"}}"#).into_bytes();
+
+    let update = |sums: String| {
+        let url = serve(HashMap::from([
+            ("/latest".to_string(), latest.clone()),
+            (format!("/{tag}/{archive}"), bytes.clone()),
+            (format!("/{tag}/SHA256SUMS.txt"), sums.into_bytes()),
+        ]));
+        Command::new(&exe)
+            .arg("update")
+            .env("SNE_DIR", scratch.join("data"))
+            .env("SNE_RELEASES_URL", format!("{url}/latest"))
+            .env("SNE_DOWNLOAD_BASE", &url)
+            .output()
+            .unwrap()
+    };
+
+    // A wrong checksum must leave the program alone.
+    let out = update(format!("{}  {archive}\n", "0".repeat(64)));
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("checksum mismatch"));
+    assert_eq!(fs::read(&exe).unwrap(), original);
+
+    let out = update(format!("{}  {archive}\n", sha256(&bytes)));
+    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(stdout.contains("to 999.0.0"), "{stdout}");
+    assert_eq!(fs::read(&exe).unwrap(), new_program);
+
+    let _ = fs::remove_dir_all(&scratch);
 }

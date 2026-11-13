@@ -23,7 +23,7 @@ Set these before running it to change what it does:
 
 | Variable | Effect |
 |---|---|
-| `SNE_VERSION` | Install this release, for example `v0.1.0`, instead of the latest |
+| `SNE_VERSION` | Install this release, for example `0.1.0-beta.1`, instead of the latest |
 | `SNE_INSTALL_DIR` | Put `sne.exe` in this folder |
 | `SNE_NO_MODIFY_PATH=1` | Leave `PATH` alone |
 | `SNE_NO_PROFILE=1` | Leave the PowerShell profile alone |
@@ -41,9 +41,9 @@ it later.
 
 | Your Windows | Setup wizard | Portable zip |
 |---|---|---|
-| 64-bit (most PCs) | `sne-<version>-x64-setup.exe` | `sne-v<version>-x86_64-pc-windows-msvc.zip` |
-| 32-bit | `sne-<version>-x86-setup.exe` | `sne-v<version>-i686-pc-windows-msvc.zip` |
-| ARM64 | `sne-<version>-arm64-setup.exe` | `sne-v<version>-aarch64-pc-windows-msvc.zip` |
+| 64-bit (most PCs) | `sne-<version>-x64-setup.exe` | `sne-<version>-x86_64-pc-windows-msvc.zip` |
+| 32-bit | `sne-<version>-x86-setup.exe` | `sne-<version>-i686-pc-windows-msvc.zip` |
+| ARM64 | `sne-<version>-arm64-setup.exe` | `sne-<version>-aarch64-pc-windows-msvc.zip` |
 
 {% hint style="info" %}
 The installers are not code-signed yet, so Windows SmartScreen shows a warning. Choose **More info**,
@@ -76,7 +76,7 @@ It needs no root. The script:
 
 | Variable | Effect |
 |---|---|
-| `SNE_VERSION` | Install this release, for example `v0.1.0`, instead of the latest |
+| `SNE_VERSION` | Install this release, for example `0.1.0-beta.1`, instead of the latest |
 | `SNE_INSTALL_DIR` | Put `sne` in this folder |
 | `SNE_NO_PROFILE=1` | Leave your shell profile alone |
 
@@ -105,7 +105,7 @@ and choose **Open**.
 
 ### Portable
 
-Download `sne-v<version>-<target>.tar.gz`, unpack it, and put `sne` somewhere on your `PATH`.
+Download `sne-<version>-<target>.tar.gz`, unpack it, and put `sne` somewhere on your `PATH`.
 
 | Target | For |
 |---|---|

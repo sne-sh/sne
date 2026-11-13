@@ -1,0 +1,84 @@
+name: Bug report
+description: Something does not work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the report. Please update first (`sne update`) and check that the problem is still there.
+        For a security problem, do not use this form: see the Security tab.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+      placeholder: |
+        I ran `sne use 22` in a folder with an .nvmrc that says 20.
+        I expected ...
+        Instead ...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact commands, in order.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `sne doctor`
+      description: Paste the full output. It includes the sne version.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS (Apple silicon)
+        - macOS (Intel)
+        - Linux (glibc, for example Ubuntu, Debian, Fedora, Arch)
+        - Linux (musl, for example Alpine)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: shell
+    attributes:
+      label: Shell
+      options:
+        - PowerShell 7
+        - Windows PowerShell 5.1
+        - cmd
+        - Git Bash
+        - bash
+        - zsh
+        - fish
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: How did you install sne?
+      options:
+        - install.ps1 (PowerShell one-liner)
+        - install.sh (curl one-liner)
+        - Windows setup wizard
+        - Portable zip or tar.gz
+        - macOS .pkg
+        - Linux package (.deb, .rpm, .apk, Arch)
+        - Built from source
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else?
+      description: Other version managers installed, a mirror or proxy in use, screenshots.

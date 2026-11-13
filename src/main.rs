@@ -96,6 +96,8 @@ enum Cmd {
     Completions { shell: clap_complete::Shell },
     /// Check that sne is set up correctly in this shell.
     Doctor,
+    /// Update sne itself to the latest version.
+    Update,
     /// Commands about sne itself: `sne self check` looks for a new version.
     #[command(name = "self")]
     Own {
@@ -119,6 +121,8 @@ enum OwnAction {
         #[arg(long)]
         notify: bool,
     },
+    /// Update sne itself to the latest version (same as `sne update`).
+    Update,
 }
 
 #[derive(Clone, Copy, clap::ValueEnum)]
@@ -146,6 +150,10 @@ fn run() -> Result<i32> {
             clap_complete::generate(shell, &mut Cli::command(), "sne", &mut std::io::stdout());
         }
         Cmd::Doctor => env::doctor()?,
+        Cmd::Update
+        | Cmd::Own {
+            action: OwnAction::Update,
+        } => update::update()?,
         Cmd::Own {
             action: OwnAction::Check { notify },
         } => update::check(notify)?,

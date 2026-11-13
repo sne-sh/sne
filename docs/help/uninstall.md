@@ -2,7 +2,15 @@
 
 ## Update sne
 
-Run `sne self check` to see whether a new version exists. To update, run the installer again. It replaces the program and keeps your installed Node.js versions.
+```sh
+sne update
+```
+
+This downloads the latest release, checks its SHA-256 and replaces the program. It keeps your installed
+Node.js versions.
+
+If sne came from a system package, or `sne update` cannot write to the program's folder, run the
+installer again instead:
 
 {% tabs %}
 {% tab title="Windows" %}

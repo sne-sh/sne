@@ -76,6 +76,8 @@ def main() -> None:
     INSTALLER.mkdir(exist_ok=True)
     logo(1024).save(ASSETS / "logo-1024.png")
     logo(512).save(ASSETS / "logo-512.png")
+    # Built into the program and shown in desktop notifications.
+    logo(256).save(ASSETS / "logo-256.png", optimize=True)
     # Shown on the first page of the GitBook documentation.
     (ROOT / "docs" / ".gitbook" / "assets").mkdir(parents=True, exist_ok=True)
     logo(512).save(ROOT / "docs" / ".gitbook" / "assets" / "logo.png")

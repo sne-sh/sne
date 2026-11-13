@@ -21,6 +21,7 @@ version, you can use anything from the [version syntax](version-syntax.md).
 | [`sne env`](#sne-env) | Print the setup code for your shell |
 | [`sne completions`](#sne-completions) | Print a tab-completion script |
 | [`sne doctor`](#sne-doctor) | Check that sne is set up correctly |
+| [`sne update`](#sne-update) | Update sne itself |
 | [`sne self check`](#sne-self-check) | Look for a new version of sne |
 | [`sne notify`](#sne-notify) | Turn new version notifications on or off |
 
@@ -180,6 +181,15 @@ sne doctor
 ```
 
 Checks the setup in this terminal and says what to fix. Run it first when something does not work.
+
+## sne update
+
+```
+sne update
+```
+
+Replaces sne with the latest release. The download is checked against the SHA-256 in the release's
+`SHA256SUMS.txt` first. `sne self update` does the same.
 
 ## sne self check
 
