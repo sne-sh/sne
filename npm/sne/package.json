@@ -1,0 +1,29 @@
+{
+  "name": "sne",
+  "version": "0.0.0",
+  "description": "Simple Node Environment: a fast, cross-platform Node.js version manager",
+  "bin": {
+    "sne": "bin/sne.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "keywords": [
+    "node",
+    "nodejs",
+    "version-manager",
+    "nvm",
+    "cli"
+  ],
+  "homepage": "https://sne-sh.github.io/sne/",
+  "bugs": "https://github.com/sne-sh/sne/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sne-sh/sne.git",
+    "directory": "npm/sne"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=8"
+  }
+}

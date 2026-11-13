@@ -10,6 +10,7 @@ on:
       - Formula/**
       - packaging/aur/**
       - packaging/winget/**
+      - npm/**
       - .github/workflows/packages.yml
   pull_request:
     paths:
@@ -17,6 +18,7 @@ on:
       - Formula/**
       - packaging/aur/**
       - packaging/winget/**
+      - npm/**
       - .github/workflows/packages.yml
   workflow_dispatch:
 
@@ -88,6 +90,47 @@ jobs:
             exit 1
           fi
           brew test sne-sh/sne/sne
+
+  npm:
+    name: npm (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the packages, install them and run sne
+        shell: bash
+        run: |
+          # The version of the last release the manifests were written for.
+          version="$(node -p "require('./bucket/sne.json').version")"
+          system="$(node -p "process.platform + '-' + process.arch")"
+          node npm/build.mjs "$version"
+          # The packages are published from Windows, which has no executable bit. Remove it here
+          # too, so this run shows that an installed sne still starts.
+          if [ "$RUNNER_OS" != Windows ]; then chmod 644 "npm/dist/sne-$system/sne"; fi
+          mkdir "$RUNNER_TEMP/tgz"
+          for name in sne "sne-$system"; do
+            (cd "npm/dist/$name" && npm pack --silent --pack-destination "$RUNNER_TEMP/tgz")
+          done
+          npm install -g --prefix "$RUNNER_TEMP/prefix" "$RUNNER_TEMP"/tgz/*.tgz
+          if [ "$RUNNER_OS" = Windows ]; then
+            sne="$RUNNER_TEMP/prefix/sne"
+          else
+            sne="$RUNNER_TEMP/prefix/bin/sne"
+            program="$RUNNER_TEMP/prefix/lib/node_modules/sne-$system/sne"
+            if [ -x "$program" ]; then
+              echo "::notice title=npm::npm made the program executable when it installed it"
+            else
+              echo "::notice title=npm::the program was not executable after install; the launcher fixes that"
+            fi
+          fi
+          said="$("$sne" --version)"
+          if [ "$said" != "sne $version" ]; then
+            echo "::error title=npm::expected 'sne $version', got '$said'"
+            exit 1
+          fi
 
   aur:
     name: AUR

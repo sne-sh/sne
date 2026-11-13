@@ -98,6 +98,7 @@ built program. A pull request needs all of it green.
 | `install.ps1`, `install.sh` | One-line installers |
 | `installer/` | Windows setup wizard (Inno Setup) |
 | `packaging/` | Linux package definition (nfpm), AUR and winget files, `update-manifests.ps1` |
+| `npm/` | The npm launcher package and the script that builds the per-system packages |
 | `bucket/`, `Formula/` | Scoop manifest and Homebrew formula; this repository is the bucket and the tap |
 | `docs/` | User documentation, published with GitBook |
 | `site/` | Project website, published with GitHub Pages |
@@ -154,7 +155,9 @@ Maintainers make releases. For reference, the steps are:
 6. Run `pwsh packaging/update-manifests.ps1 <version>` and commit the result. It rewrites the Scoop
    manifest (`bucket/`), the Homebrew formula (`Formula/`), and the AUR and winget files in
    `packaging/` with the new version and checksums. The Packages workflow then installs sne with each.
-7. Copy `packaging/aur/PKGBUILD` and `.SRCINFO` to the AUR repository of `sne-bin` and push it. Send
+7. Run `node npm/build.mjs <version> --publish` to build the npm packages from the release and publish
+   them: the launcher `sne` and one package per system. It needs `npm login` first.
+8. Copy `packaging/aur/PKGBUILD` and `.SRCINFO` to the AUR repository of `sne-bin` and push it. Send
    the folder under `packaging/winget/manifests/` as a pull request to `microsoft/winget-pkgs`.
 
 To test the release build without releasing, push to the `release-dry-run` branch.
