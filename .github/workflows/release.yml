@@ -220,4 +220,12 @@ jobs:
         if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --draft --generate-notes
+        run: |
+          # The release notes are this version's section of CHANGELOG.md, plus how to install.
+          awk -v heading="## $GITHUB_REF_NAME" '/^## / { on = (index($0, heading) == 1); next } on' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "::error::CHANGELOG.md has no section for $GITHUB_REF_NAME"
+            exit 1
+          fi
+          cat packaging/release-notes-footer.md >> notes.md
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --draft             --title "sne $GITHUB_REF_NAME" --notes-file notes.md
