@@ -83,11 +83,23 @@ function Install-Sne {
 
     if ($env:SNE_NO_PROFILE -ne '1') {
         $line = 'if (Get-Command sne -ErrorAction SilentlyContinue) { sne env --use-on-cd | Out-String | Invoke-Expression }'
-        $profileDir = Split-Path -Parent $PROFILE
-        if (-not (Test-Path -LiteralPath $profileDir)) { New-Item -ItemType Directory -Force -Path $profileDir | Out-Null }
-        if (-not ((Test-Path -LiteralPath $PROFILE) -and (Select-String -LiteralPath $PROFILE -SimpleMatch 'sne env' -Quiet))) {
-            Add-Content -LiteralPath $PROFILE -Value $line
-            Write-Host "Added the sne setup line to $PROFILE"
+        # Windows PowerShell 5.1 and PowerShell 7 keep separate profiles. Set up the one running this
+        # script, and the other one too when that edition is installed, so sne works in both.
+        $documents = [Environment]::GetFolderPath('MyDocuments')
+        $profiles = @($PROFILE)
+        if ($documents) {
+            $profiles += Join-Path $documents 'WindowsPowerShell\Microsoft.PowerShell_profile.ps1'
+            if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+                $profiles += Join-Path $documents 'PowerShell\Microsoft.PowerShell_profile.ps1'
+            }
+        }
+        foreach ($profilePath in ($profiles | Select-Object -Unique)) {
+            $profileDir = Split-Path -Parent $profilePath
+            if (-not (Test-Path -LiteralPath $profileDir)) { New-Item -ItemType Directory -Force -Path $profileDir | Out-Null }
+            if (-not ((Test-Path -LiteralPath $profilePath) -and (Select-String -LiteralPath $profilePath -SimpleMatch 'sne env' -Quiet))) {
+                Add-Content -LiteralPath $profilePath -Value $line
+                Write-Host "Added the sne setup line to $profilePath"
+            }
         }
     }
 
