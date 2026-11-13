@@ -13,12 +13,25 @@ INSTALLER = ROOT / "installer"
 
 BACKGROUND = "#0B1220"
 HEXAGON = "#22D3EE"
-BOLT = "#FACC15"
+BOLT = "#FACC15"  # the link
 
-# Coordinates on a 1024 x 1024 canvas, identical to logo.svg.
-HEX_OUTER = [(512, 172), (806.4, 342), (806.4, 682), (512, 852), (217.6, 682), (217.6, 342)]
-HEX_INNER = [(512, 236), (751, 374), (751, 650), (512, 788), (273, 650), (273, 374)]
-BOLT_SHAPE = [(570, 290), (395, 545), (505, 545), (455, 735), (635, 480), (522, 480)]
+# Coordinates on a 1024 x 1024 canvas, identical to logo.svg: a link (yellow) arriving at a version (hexagon).
+HEX_CENTER, HEX_RADIUS, HEX_STROKE = (600, 512), 270, 60
+LINK_START, LINK_END = (150, 512), (600, 512)
+LINK_STROKE, LINK_GAP, LINK_DOT = 64, 150, 84
+
+
+def hexagon(center: tuple[float, float], radius: float) -> list[tuple[float, float]]:
+    cx, cy = center
+    half = 0.8660254 * radius
+    return [
+        (cx, cy - radius),
+        (cx + half, cy - radius / 2),
+        (cx + half, cy + radius / 2),
+        (cx, cy + radius),
+        (cx - half, cy + radius / 2),
+        (cx - half, cy - radius / 2),
+    ]
 
 
 def logo(size: int, rounded: bool = True) -> Image.Image:
@@ -26,14 +39,28 @@ def logo(size: int, rounded: bool = True) -> Image.Image:
     scale = 4 * size / 1024
     canvas = Image.new("RGBA", (4 * size, 4 * size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(canvas)
-    points = lambda shape: [(x * scale, y * scale) for x, y in shape]
+
+    def dot(point: tuple[float, float], radius: float, fill: str) -> None:
+        x, y = point[0] * scale, point[1] * scale
+        r = radius * scale
+        draw.ellipse([x - r, y - r, x + r, y + r], fill=fill)
+
+    def stroke(points: list[tuple[float, float]], width: float, fill: str) -> None:
+        """A line with round ends and round corners, like SVG stroke-linecap/linejoin round."""
+        draw.line([(x * scale, y * scale) for x, y in points], fill=fill, width=round(width * scale))
+        for point in points:
+            dot(point, width / 2, fill)
+
     if rounded:
         draw.rounded_rectangle([0, 0, 4 * size - 1, 4 * size - 1], radius=224 * scale, fill=BACKGROUND)
     else:
         draw.rectangle([0, 0, 4 * size, 4 * size], fill=BACKGROUND)
-    draw.polygon(points(HEX_OUTER), fill=HEXAGON)
-    draw.polygon(points(HEX_INNER), fill=BACKGROUND)
-    draw.polygon(points(BOLT_SHAPE), fill=BOLT)
+    outline = hexagon(HEX_CENTER, HEX_RADIUS)
+    stroke(outline + [outline[0]], HEX_STROKE, HEXAGON)
+    # A dark band under the link cuts the hexagon where the link passes through it.
+    stroke([LINK_START, LINK_END], LINK_GAP, BACKGROUND)
+    stroke([LINK_START, LINK_END], LINK_STROKE, BOLT)
+    dot(LINK_END, LINK_DOT, BOLT)
     return canvas.resize((size, size), Image.LANCZOS)
 
 
