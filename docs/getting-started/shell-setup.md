@@ -1,7 +1,15 @@
 # Shell setup
 
-sne needs one line in your shell profile. The line runs `sne env` each time a terminal starts, which
-puts the active Node.js version on your `PATH`.
+The installers set everything up, so most people never need this page.
+
+There are two levels:
+
+| Level | What you get | Who sets it up |
+|---|---|---|
+| Default version on `PATH` | `node` works in every terminal and program. `sne use` changes the version everywhere. | `install.ps1`, the Windows setup wizard, and the Linux packages (for login shells) |
+| Setup line in your shell profile | Each terminal can use its own version, and versions switch automatically when you `cd` into a project. | `install.ps1` and the wizard (PowerShell), `install.sh` (bash, zsh, fish) |
+
+The setup line runs `sne env` each time a terminal starts.
 
 {% hint style="info" %}
 `install.ps1`, the Windows setup wizard and `install.sh` add this line for you. You only need this

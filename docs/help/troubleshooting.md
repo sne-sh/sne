@@ -21,6 +21,12 @@ run in this terminal.
 2. Open a new terminal.
 3. Run `sne doctor`.
 
+## `sne use` says "in every terminal"
+
+The setup line has not run in this terminal, so sne changed the default version, which every terminal
+uses. This is the normal behaviour in cmd and in any shell without the setup line. To give each
+terminal its own version, add the [setup line](../getting-started/shell-setup.md) for your shell.
+
 ## PowerShell says running scripts is disabled
 
 Windows PowerShell 5.1 blocks profile scripts by default. Allow local scripts once:

@@ -49,7 +49,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 #endif
 
 [Tasks]
-Name: "addtopath"; Description: "Add sne to PATH (needed to run it from any terminal)"
+Name: "addtopath"; Description: "Add sne and Node.js to PATH (needed to run them from any terminal)"
 Name: "psprofile"; Description: "Set up PowerShell: switch Node versions automatically (adds one line to your profile)"
 Name: "notify"; Description: "Tell me when a new version of sne is available (checks once a day)"; Flags: unchecked
 
@@ -117,11 +117,18 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if (CurStep = ssPostInstall) and WizardIsTaskSelected('addtopath') then
+  begin
     AddToUserPath(ExpandConstant('{app}'));
+    { The link to the default Node version: node then works everywhere with no shell setup. }
+    AddToUserPath(ExpandConstant('{localappdata}\sne\aliases\default'));
+  end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usPostUninstall then
+  begin
     RemoveFromUserPath(ExpandConstant('{app}'));
+    RemoveFromUserPath(ExpandConstant('{localappdata}\sne\aliases\default'));
+  end;
 end;

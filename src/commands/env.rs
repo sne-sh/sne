@@ -64,7 +64,14 @@ pub fn doctor() -> Result<()> {
     let path_entries: Vec<PathBuf> =
         std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default()).collect();
     match shell_link() {
-        None => problem("this shell is not set up. Add the output of `sne env` to your shell profile"),
+        None if super::default_on_path() => println!(
+            "this terminal: uses the default version; `sne use` changes it for every terminal \
+             (add the setup line from `sne env --help` to switch per terminal)"
+        ),
+        None => problem(
+            "Node from sne is not on PATH in this terminal. Open a new terminal; if it is still missing, \
+             run the sne installer again or add the setup line from `sne env --help`",
+        ),
         Some(link) => {
             match link::version(&link) {
                 Some(version) => println!("active in this shell: {version}"),

@@ -5,16 +5,12 @@ use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 
-use super::{aliases, default_link, is_alias_name, resolve_installed, shell_link};
+use super::{aliases, default_link, default_on_path, is_alias_name, resolve_installed, shell_link};
 use crate::resolve::Spec;
 use crate::version::Version;
 use crate::{dirs, link, version_file};
 
-const SETUP_HINT: &str = "this shell is not set up for sne yet. Add the output of `sne env` to your \
-shell profile (see `sne env --help`), then open a new terminal";
-
 pub fn use_version(input: Option<String>) -> Result<()> {
-    let link = shell_link().context(SETUP_HINT)?;
     let input = match input {
         Some(input) => input,
         None => {
@@ -25,8 +21,24 @@ pub fn use_version(input: Option<String>) -> Result<()> {
         }
     };
     let version = resolve_installed(&input)?;
-    link::create(&dirs::bin_dir(version), &link)?;
-    println!("Using Node {version}");
+    match shell_link() {
+        Some(link) => {
+            link::create(&dirs::bin_dir(version), &link)?;
+            println!("Using Node {version}");
+        }
+        // No setup line ran in this terminal. Switch the default instead, which the installers
+        // put on PATH, so `sne use` works with no setup at all.
+        None => {
+            link::create(&dirs::version_dir(version), &default_link())?;
+            println!("Using Node {version} in every terminal");
+            if !default_on_path() {
+                println!(
+                    "Node is not on PATH in this terminal yet. Open a new terminal. If it is still \
+                     missing there, run the sne installer again or see `sne env --help`."
+                );
+            }
+        }
+    }
     Ok(())
 }
 

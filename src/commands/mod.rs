@@ -16,6 +16,30 @@ pub fn default_link() -> PathBuf {
     dirs::aliases().join("default")
 }
 
+/// Folder of the default version's programs. The installers put it on `PATH`, so Node works in
+/// every terminal and program even where the shell setup line has not run.
+pub fn default_bin() -> PathBuf {
+    if cfg!(windows) {
+        default_link()
+    } else {
+        default_link().join("bin")
+    }
+}
+
+/// Whether [`default_bin`] is on `PATH` in this process.
+pub fn default_on_path() -> bool {
+    let wanted = default_bin();
+    std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default()).any(|entry| {
+        let (a, b) = (entry.to_string_lossy(), wanted.to_string_lossy());
+        let trim = |s: &str| s.trim_end_matches(['/', '\\']).to_string();
+        if cfg!(windows) {
+            trim(&a).eq_ignore_ascii_case(&trim(&b))
+        } else {
+            trim(&a) == trim(&b)
+        }
+    })
+}
+
 /// The per-shell link that `sne env` put on `PATH`.
 pub fn shell_link() -> Option<PathBuf> {
     std::env::var_os("SNE_SHELL_LINK")

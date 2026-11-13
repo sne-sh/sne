@@ -3,7 +3,7 @@
 #   irm https://raw.githubusercontent.com/sne-sh/sne/main/install.ps1 | iex
 #
 # Optional settings, as environment variables set before running:
-#   SNE_VERSION         release tag to install, for example 0.1.0-beta.1 (default: latest)
+#   SNE_VERSION         release tag to install, for example 0.1.0-beta.2 (default: latest)
 #   SNE_INSTALL_DIR     where sne.exe goes (default: %LOCALAPPDATA%\Programs\sne)
 #   SNE_NO_MODIFY_PATH  set to 1 to leave PATH alone
 #   SNE_NO_PROFILE      set to 1 to leave the PowerShell profile alone
@@ -63,22 +63,32 @@ function Install-Sne {
     Write-Host "Installed $(Join-Path $installDir 'sne.exe')"
 
     if ($env:SNE_NO_MODIFY_PATH -ne '1') {
+        # Two folders go on PATH: sne itself, and the link to the default Node version. With the
+        # second one, node works in every terminal and program without any shell setup.
+        $dataDir = if ($env:SNE_DIR) { $env:SNE_DIR } else { Join-Path $env:LOCALAPPDATA 'sne' }
+        $pathDirs = @($installDir, (Join-Path $dataDir 'aliases\default'))
         # Read and write the raw registry value, so entries such as %USERPROFILE%\bin are kept as written.
         $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment', $true)
         try {
-            $userPath = [string]$key.GetValue('Path', '', 'DoNotExpandEnvironmentNames')
-            if (($userPath -split ';') -notcontains $installDir) {
-                $key.SetValue('Path', ($userPath.TrimEnd(';') + ';' + $installDir).TrimStart(';'), 'ExpandString')
+            $changed = $false
+            foreach ($dir in $pathDirs) {
+                $userPath = [string]$key.GetValue('Path', '', 'DoNotExpandEnvironmentNames')
+                if (($userPath -split ';') -notcontains $dir) {
+                    $key.SetValue('Path', ($userPath.TrimEnd(';') + ';' + $dir).TrimStart(';'), 'ExpandString')
+                    $changed = $true
+                    Write-Host "Added $dir to your PATH"
+                }
+                if (($env:Path -split ';') -notcontains $dir) { $env:Path = "$dir;$env:Path" }
+            }
+            if ($changed) {
                 # Writing any user variable through .NET tells running programs that the environment changed.
                 [Environment]::SetEnvironmentVariable('SNE_INSTALL_NOTIFY', '1', 'User')
                 [Environment]::SetEnvironmentVariable('SNE_INSTALL_NOTIFY', $null, 'User')
-                Write-Host "Added $installDir to your PATH"
             }
         }
         finally {
             $key.Close()
         }
-        if (($env:Path -split ';') -notcontains $installDir) { $env:Path = "$installDir;$env:Path" }
     }
 
     if ($env:SNE_NO_PROFILE -ne '1') {
