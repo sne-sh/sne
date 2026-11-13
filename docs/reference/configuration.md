@@ -44,7 +44,12 @@ export SNE_NODE_MIRROR=https://mirror.example.com/node
 sne install lts
 ```
 
-sne still checks each download against the `SHASUMS256.txt` that the mirror serves.
+The address must start with `https://`. Plain `http://` is accepted only for `127.0.0.1` and
+`localhost`.
+
+sne still checks each download against the `SHASUMS256.txt` that the mirror serves. That file comes
+from the mirror too, so use a mirror only if you trust who runs it. See
+[what a download is checked against](how-it-works.md#what-a-download-is-checked-against).
 
 ## Installer settings
 

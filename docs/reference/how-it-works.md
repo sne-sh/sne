@@ -41,6 +41,20 @@ sne has no such program. The `node` on your `PATH` is the real Node.js.
 
 Because of the last step, a cancelled or failed install never leaves a half-installed version.
 
+## What a download is checked against
+
+* **Everything arrives over HTTPS.** sne refuses a plain `http://` address, and refuses a redirect from
+  HTTPS to HTTP. The one exception is an address on your own machine (`127.0.0.1` or `localhost`),
+  for a local mirror.
+* **The SHA-256 comes from the same server as the file.** It proves the file arrived complete and
+  unchanged. It does not protect you if that server itself is taken over, because the attacker could
+  replace both. sne does not check the signatures that the Node.js project publishes next to
+  `SHASUMS256.txt`.
+* **A mirror is trusted completely.** With `SNE_NODE_MIRROR`, both the file and its checksum come from
+  the mirror, so use one only if you trust who runs it.
+* **sne itself** is checked the same way when you run `sne update`: the file from the GitHub release
+  against that release's `SHA256SUMS.txt`.
+
 ## What runs on every prompt
 
 Nothing. With `--use-on-cd`, a small hook runs when the folder changes. It reads the project's
