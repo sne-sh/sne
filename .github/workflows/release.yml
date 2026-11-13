@@ -9,8 +9,9 @@ on:
     branches: [release-dry-run]
   workflow_dispatch:
 
+# The workflow token can only read the repository. The job that creates the release asks for more.
 permissions:
-  contents: write
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
@@ -23,11 +24,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
+          toolchain: stable
           components: clippy, rustfmt
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
       - name: Tag matches Cargo.toml
         if: github.ref_type == 'tag'
         shell: bash
@@ -53,9 +55,10 @@ jobs:
           - { target: i686-pc-windows-msvc, os: windows-latest, arch: x86 }
           - { target: aarch64-pc-windows-msvc, os: windows-11-arm, arch: arm64 }
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
+          toolchain: stable
           targets: ${{ matrix.target }}
       - name: Version
         shell: bash
@@ -86,7 +89,7 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "Setup exited with $($p.ExitCode)" }
           & "$dir\sne.exe" --version
           if ($LASTEXITCODE -ne 0) { throw 'The installed sne.exe does not run' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.target }}
           if-no-files-found: error
@@ -99,9 +102,10 @@ jobs:
     needs: checks
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
+          toolchain: stable
           targets: x86_64-apple-darwin,aarch64-apple-darwin
       - name: Version
         run: echo "TAG=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
@@ -126,7 +130,7 @@ jobs:
         run: |
           sudo installer -pkg sne-*-macos-universal.pkg -target /
           /usr/local/bin/sne --version
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos
           if-no-files-found: error
@@ -147,9 +151,10 @@ jobs:
           - { target: x86_64-unknown-linux-musl, os: ubuntu-latest }
           - { target: aarch64-unknown-linux-musl, os: ubuntu-24.04-arm }
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
+          toolchain: stable
           targets: ${{ matrix.target }}
       - name: Install musl tools
         if: contains(matrix.target, 'musl')
@@ -163,7 +168,7 @@ jobs:
           mkdir "$name"
           cp README.md LICENSE "target/${{ matrix.target }}/release/sne" "$name/"
           tar -czf "$name.tar.gz" "$name"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.target }}
           if-no-files-found: error
@@ -173,9 +178,13 @@ jobs:
     name: Packages and release
     needs: [windows, macos, linux]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write        # create the draft release
+      id-token: write        # sign the build provenance
+      attestations: write    # store the build provenance
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
@@ -183,7 +192,7 @@ jobs:
         run: echo "TAG=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
       - name: Linux packages (deb, rpm, apk, Arch)
         run: |
-          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
           export PATH="$(go env GOPATH)/bin:$PATH"
           export VERSION="$TAG"
           for pair in x86_64:amd64 aarch64:arm64; do
@@ -212,10 +221,17 @@ jobs:
           "$RUNNER_TEMP/bin/sne" --version
       - name: Checksums
         run: cd dist && rm -f SHA256SUMS.txt && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-files
           path: dist/*
+      # Records that these exact files were built by this workflow from this commit.
+      # Anyone can check a download with: gh attestation verify <file> --repo sne-sh/sne
+      - name: Build provenance
+        if: github.ref_type == 'tag'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: dist/SHA256SUMS.txt
       - name: Create draft release
         if: github.ref_type == 'tag'
         env:

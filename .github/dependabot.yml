@@ -1,0 +1,14 @@
+# Keeps the pinned GitHub Actions and the Rust dependencies current. Each update is a pull request
+# to develop, where CI runs before anything is merged.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+  - package-ecosystem: cargo
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
