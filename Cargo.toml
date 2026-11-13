@@ -5,6 +5,10 @@ edition = "2024"
 description = "Simple Node Environment: a fast, cross-platform Node.js version manager"
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/sne-sh/sne"
+homepage = "https://sne-sh.github.io/sne/"
+# Only what is needed to build and test the program goes to crates.io.
+include = ["src/**", "tests/**", "assets/logo-256.png", "README.md", "LICENSE", "CHANGELOG.md"]
 keywords = ["node", "nodejs", "version-manager", "nvm", "cli"]
 categories = ["command-line-utilities", "development-tools"]
 
