@@ -4,7 +4,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | sh
 #
 # Optional settings, as environment variables:
-#   SNE_VERSION         release tag to install, for example 0.1.0-beta.4 (default: latest)
+#   SNE_VERSION         release tag to install, for example 0.1.0-beta.5 (default: latest)
 #   SNE_INSTALL_DIR     where the sne binary goes (default: ~/.local/bin)
 #   SNE_NO_PROFILE      set to 1 to leave your shell profile alone
 #   SNE_NO_NOTIFY       set to 1 to not be notified when a new sne version is out

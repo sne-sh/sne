@@ -36,7 +36,7 @@ sne exec 20 -- npm test
 Set `SNE_VERSION` so a new sne release cannot change your builds:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | SNE_VERSION=0.1.0-beta.4 sh
+curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | SNE_VERSION=0.1.0-beta.5 sh
 ```
 
 ## Use a mirror

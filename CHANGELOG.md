@@ -1,10 +1,30 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.5 (2026-11-13)
 
+This release is about security. Please update.
+
+### Security
+
+- Windows: new version notifications are no longer turned on by sne, `install.ps1` or the setup wizard. Windows Defender reported the daily update-check task as `Behavior:Win32/Persistence` and deleted sne. `sne notify on` still turns them on. Linux and macOS are unchanged.
+- Project version files (`.nvmrc`, `.node-version`, `package.json`) are read only when they are small regular files. A repository could make `.nvmrc` a link to a private file, whose first line sne printed on `cd`, or put terminal escape codes in it.
+- Downloads use HTTPS only. A plain `http://` address in `SNE_NODE_MIRROR`, `SNE_RELEASES_URL` or `SNE_DOWNLOAD_BASE` is refused, except for `127.0.0.1` and `localhost`, and so is a redirect from HTTPS to HTTP.
+- A stable sne is offered stable releases only by `sne update` and the notifications. A beta is offered both.
+- cmd: the setup lines are quoted, so a folder name with `&` no longer runs part of the path as a command.
+- `sne doctor` reports a data folder that other users can write to (Linux and macOS).
+- Every release file has a build provenance record: `gh attestation verify <file> --repo sne-sh/sne`.
+- `sne.exe` carries its product name, version and icon.
+
+### Changes
+
+- `install.ps1` and `install.sh` run sne once before changing `PATH` or a profile, and say why when the system refuses to run it, for example Smart App Control.
+- `install.ps1` and the setup wizard leave a PowerShell profile alone when the execution policy would refuse to load it.
+- `sne update` leaves an install from Scoop, Homebrew, npm, Cargo or a Linux package to that package manager, and prints its command.
+- The `cd` hook runs the sne program directly. With an npm install, a change of folder went from about 94 ms to 12 ms on Windows.
 - Install with Scoop (`scoop bucket add sne https://github.com/sne-sh/sne`) or Homebrew (`brew tap sne-sh/sne https://github.com/sne-sh/sne`).
 - sne is on crates.io: `cargo install sne --version <version>`.
 - sne is on npm as `sne-cli`: `npm install -g sne-cli`, or the same with yarn, pnpm or bun.
+- The README has a privacy section and a code signing policy.
 
 ## 0.1.0-beta.4 (2026-11-13)
 
