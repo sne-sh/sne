@@ -18,6 +18,7 @@ Tested on:
 
 ## Checklist
 
+- [ ] This pull request targets `develop`.
 - [ ] `cargo fmt`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass.
 - [ ] New behaviour has a test, and a bug fix has a test that fails without the fix.
 - [ ] `sne use`, `sne env` and the cd hook still do not use the network. If I changed them, the

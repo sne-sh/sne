@@ -121,12 +121,23 @@ Write in short, plain sentences. Many readers are not native English speakers.
 
 ## Commits and pull requests
 
-1. Fork the repository and create a branch from `main`.
+1. Fork the repository and create a branch from `develop`.
 2. Keep each pull request to one change. Two small pull requests are reviewed faster than one large one.
 3. Write commit messages that say what changed and why, in the imperative: "Fix the link target on
    Git Bash", not "fixed stuff".
 4. Fill in the pull request template. It asks what you tested and on which systems.
-5. A maintainer reviews it. Expect questions; they are about the code, not about you.
+5. Open the pull request against `develop`, not `main`.
+6. A maintainer reviews it. Expect questions; they are about the code, not about you.
+
+### Branches
+
+| Branch | Purpose | Who can push |
+|---|---|---|
+| `develop` | Where all work lands first. Pull requests target it. | Maintainers only; everyone else through a pull request |
+| `main` | What is released. The install scripts and the website are served from it. | Maintainers only |
+
+Both branches are protected. A pull request needs green checks and a maintainer's approval before
+it is merged.
 
 ## Releases
 
