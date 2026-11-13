@@ -8,7 +8,7 @@ readme = "README.md"
 repository = "https://github.com/sne-sh/sne"
 homepage = "https://sne-sh.github.io/sne/"
 # Only what is needed to build and test the program goes to crates.io.
-include = ["src/**", "tests/**", "assets/logo-256.png", "README.md", "LICENSE", "CHANGELOG.md"]
+include = ["src/**", "tests/**", "build.rs", "assets/logo-256.png", "assets/sne.ico", "README.md", "LICENSE", "CHANGELOG.md"]
 keywords = ["node", "nodejs", "version-manager", "nvm", "cli"]
 categories = ["command-line-utilities", "development-tools"]
 
@@ -27,6 +27,10 @@ ureq = "3.5.1"
 junction = "2.1.0"
 windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Registry", "Win32_UI_WindowsAndMessaging"] }
 zip = { version = "9.5.1", default-features = false, features = ["deflate"] }
+
+# Only used by build.rs, to put the version and icon inside sne.exe.
+[target."cfg(windows)".build-dependencies]
+winresource = "0.1.34"
 
 [target."cfg(not(windows))".dependencies]
 liblzma = { version = "0.4.9", features = ["static"] }

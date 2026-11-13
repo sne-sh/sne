@@ -37,3 +37,23 @@ Examples of what we want to hear about:
   serves a matching pair of altered files, so only set `SNE_NODE_MIRROR` to a server you trust.
 - `sne update` and the install scripts check the release file against the release's `SHA256SUMS.txt`.
 - The Windows installers and the macOS package are not code-signed yet.
+- Downloads are made over HTTPS only. Plain `http://` is refused, except for `127.0.0.1` and
+  `localhost`.
+- Project version files (`.nvmrc`, `.node-version`, `package.json`) are read only when they are
+  small regular files, never through a link, and a version containing control characters is ignored.
+
+## Check a download
+
+Every release file is listed in the release's `SHA256SUMS.txt`:
+
+```sh
+sha256sum -c SHA256SUMS.txt --ignore-missing
+```
+
+From 0.1.0-beta.5 on, each file also has a build provenance record. It proves that the file was built
+by the release workflow of this repository from the tagged commit. With the
+[GitHub CLI](https://cli.github.com):
+
+```sh
+gh attestation verify sne-0.1.0-beta.5-x64-setup.exe --repo sne-sh/sne
+```

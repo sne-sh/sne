@@ -214,6 +214,32 @@ cargo fmt --check
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Privacy
+
+sne connects to two places, and only for these reasons:
+
+- **nodejs.org** (or the mirror in `SNE_NODE_MIRROR`), to list and download Node.js versions.
+- **GitHub**, to look for a new version of sne: at most once a day while `sne install` runs, when
+  you run `sne self check` or `sne update`, and once a day if you turned on `sne notify`.
+
+It sends nothing about you or your machine beyond what any download sends (your IP address and a
+`sne/<version>` user agent). There is no telemetry and no account. `SNE_NO_UPDATE_CHECK=1` stops the
+check during `sne install`.
+
+## Code signing policy
+
+The Windows installers and `sne.exe` are not code-signed yet, so Windows may warn before running
+them. Every release file is listed with its SHA-256 in `SHA256SUMS.txt` and has a
+[build provenance](SECURITY.md#check-a-download) record from the GitHub workflow that built it.
+
+When signing starts, only files built by the release workflow in this repository from a tagged
+commit will be signed, and each signing will be approved by hand by a maintainer.
+
+| Role | Who |
+|---|---|
+| Authors and reviewers | The [maintainers of sne-sh/sne](https://github.com/orgs/sne-sh/people) |
+| Approvers of each release | The owners of the [sne-sh](https://github.com/sne-sh) organization |
+
 ## License
 
 [MIT](LICENSE)
