@@ -1,23 +1,23 @@
 {
-    "version": "0.1.0-beta.4",
+    "version": "0.1.0-beta.5",
     "description": "Simple Node Environment: a fast, cross-platform Node.js version manager",
     "homepage": "https://sne-sh.github.io/sne/",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-x86_64-pc-windows-msvc.zip",
-            "hash": "397be2e2400520cad0bd31355f1b6788bfb73684228699e9a4fff8443861d9d2",
-            "extract_dir": "sne-0.1.0-beta.4-x86_64-pc-windows-msvc"
+            "url": "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.5/sne-0.1.0-beta.5-x86_64-pc-windows-msvc.zip",
+            "hash": "676d1287e80a63c5bd3b1082c3473d173b52ce8dec3926e6f97857510f98e01b",
+            "extract_dir": "sne-0.1.0-beta.5-x86_64-pc-windows-msvc"
         },
         "32bit": {
-            "url": "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-i686-pc-windows-msvc.zip",
-            "hash": "16fc5c7725c5d528b9d8788e20dd98b8ed11d8738a39a2920ab7867802c6f07c",
-            "extract_dir": "sne-0.1.0-beta.4-i686-pc-windows-msvc"
+            "url": "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.5/sne-0.1.0-beta.5-i686-pc-windows-msvc.zip",
+            "hash": "75004b9a2cc8d6a2527ccdc7432172b899a91cdad53eb2be83b76abd45342d83",
+            "extract_dir": "sne-0.1.0-beta.5-i686-pc-windows-msvc"
         },
         "arm64": {
-            "url": "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-aarch64-pc-windows-msvc.zip",
-            "hash": "ed86d4570a683fb38669208564aff751ab84d88202345b1b4043f1ab858e0f11",
-            "extract_dir": "sne-0.1.0-beta.4-aarch64-pc-windows-msvc"
+            "url": "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.5/sne-0.1.0-beta.5-aarch64-pc-windows-msvc.zip",
+            "hash": "2b068ed9876c00358ca9f95ebbe3cff8a155d3229efdc2d550c9693dcc90ef67",
+            "extract_dir": "sne-0.1.0-beta.5-aarch64-pc-windows-msvc"
         }
     },
     "bin": "sne.exe",

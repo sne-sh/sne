@@ -2,28 +2,28 @@
 class Sne < Formula
   desc "Simple Node Environment: a fast Node.js version manager"
   homepage "https://sne-sh.github.io/sne/"
-  version "0.1.0-beta.4"
+  version "0.1.0-beta.5"
   license "MIT"
 
   on_macos do
     on_arm do
-      url "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-aarch64-apple-darwin.tar.gz"
-      sha256 "74f0b765d29b88ffa4170bd088de2581e6abab6bc2845a269b56c4b8cace7ed3"
+      url "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.5/sne-0.1.0-beta.5-aarch64-apple-darwin.tar.gz"
+      sha256 "b15b5d4a0b2aa3e575d67ea3b37d36e4ec9ea890889fedf88c4c9c9156a7085c"
     end
     on_intel do
-      url "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-x86_64-apple-darwin.tar.gz"
-      sha256 "6b0baba84588bb14a03f0c90bcf4999091e1309c6459b0f0dbfa96a5c26e8a88"
+      url "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.5/sne-0.1.0-beta.5-x86_64-apple-darwin.tar.gz"
+      sha256 "2e86207294c406823dd929b7c79c6c04ac157c73bce9b68b51b399ac88d00ebb"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-aarch64-unknown-linux-musl.tar.gz"
-      sha256 "8a54a4448e991319233c265e4268f2981d05768b11e14d3cb9202a48794170d4"
+      url "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.5/sne-0.1.0-beta.5-aarch64-unknown-linux-musl.tar.gz"
+      sha256 "ccc858ebe3dc3e3dc2e5651db3838cf882d62f7f59ade7dfd83aab0ea5411500"
     end
     on_intel do
-      url "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.4/sne-0.1.0-beta.4-x86_64-unknown-linux-musl.tar.gz"
-      sha256 "8bd729e2a3fb81122e54aef08bb9c9f162e98d134e14c1fcb10411456b84fb28"
+      url "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.5/sne-0.1.0-beta.5-x86_64-unknown-linux-musl.tar.gz"
+      sha256 "9892fd6c2742c8220d9a33a2417ee4f5bbc9123683ed33055eab8305ac63601d"
     end
   end
 
