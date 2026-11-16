@@ -239,7 +239,7 @@ fn installed_by(exe: &Path, latest: &Version) -> Option<(&'static str, String)> 
     } else if path.starts_with("/usr/bin/") {
         (
             "your system's package manager",
-            "the newer .deb or .rpm package from https://github.com/sne-sh/sne/releases, or for Arch: yay -Syu sne-bin"
+            "the newer .deb or .rpm package from https://github.com/sne-sh/sne/releases"
                 .to_string(),
         )
     } else {

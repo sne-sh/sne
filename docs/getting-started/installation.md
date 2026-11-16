@@ -124,7 +124,6 @@ for every user of the machine and do not change any shell profile, so finish wit
 | macOS (Intel and Apple silicon) | `sne-<version>-macos-universal.pkg` | `sudo installer -pkg <file> -target /` |
 | Debian, Ubuntu | `sne_<version>_amd64.deb` or `_arm64.deb` | `sudo dpkg -i <file>` |
 | Fedora, RHEL, openSUSE | `sne-<version>-1.x86_64.rpm` or `.aarch64.rpm` | `sudo rpm -i <file>` |
-| Arch | AUR package `sne-bin` | `yay -S sne-bin` (or any AUR helper) |
 
 {% hint style="info" %}
 The macOS package is not signed yet. Install it with the command above, or right-click it in Finder

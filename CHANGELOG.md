@@ -56,9 +56,10 @@ Fewer, better-tested files. Nobody on a supported system loses anything.
   its end of life in April 2027, and Windows 11 has no 32-bit edition. 0.1.0-beta.5 is the last sne for
   it. On a 64-bit Windows, `SNE_ARCH=x86` still installs 32-bit Node.js builds.
 - **The glibc Linux files** (`*-unknown-linux-gnu.tar.gz`). The static `*-unknown-linux-musl` files
-  run on every Linux, and the packages, `install.sh`, `sne update`, Homebrew, the AUR and npm already used them.
-- **The Alpine `.apk` and the Arch package file.** On Alpine, run `sudo apk del sne`, then install with
-  `install.sh`. On Arch, use the AUR package `sne-bin`.
+  run on every Linux, and the packages, `install.sh`, `sne update`, Homebrew and npm already used them.
+- **The Alpine `.apk` and the Arch package file.** On Alpine or Arch, remove the package
+  (`sudo apk del sne` or `sudo pacman -R sne`), then install with `install.sh`, which `sne update` keeps
+  up to date. There is no AUR package.
 
 ## 0.1.0-beta.5 (2026-11-13)
 

@@ -2,12 +2,11 @@
 #
 #   bucket/sne.json     Scoop (this repository is the bucket)
 #   Formula/sne.rb      Homebrew (this repository is the tap)
-#   packaging/aur/      PKGBUILD and .SRCINFO for the AUR package sne-bin
 #   packaging/winget/   manifests for a pull request to microsoft/winget-pkgs
 #
 # Run it from anywhere after the release is published, then commit the result:
 #
-#   pwsh packaging/update-manifests.ps1 0.1.0-beta.4
+#   pwsh packaging/update-manifests.ps1 0.1.0
 #
 # The checksums come from the release's SHA256SUMS.txt, so the release must be published first.
 
@@ -30,12 +29,6 @@ function Sum([string]$file) {
     if (-not $sums.ContainsKey($file)) { throw "$file is not listed in SHA256SUMS.txt of $Version" }
     $sums[$file]
 }
-
-# The AUR package also installs the profile script, taken from the tagged source.
-$profileUrl = "https://raw.githubusercontent.com/sne-sh/sne/$Version/packaging/profile.sh"
-$profileBytes = (Invoke-WebRequest $profileUrl).Content
-if ($profileBytes -is [string]) { $profileBytes = [Text.Encoding]::UTF8.GetBytes($profileBytes) }
-$profileSum = ([Security.Cryptography.SHA256]::HashData([byte[]]$profileBytes) | ForEach-Object { $_.ToString('x2') }) -join ''
 
 $released = try {
     ([datetime](Invoke-RestMethod "https://api.github.com/repos/sne-sh/sne/releases/tags/$Version").published_at).ToUniversalTime()
@@ -145,67 +138,6 @@ end
     LINUX_ARM = Sum "sne-$Version-aarch64-unknown-linux-musl.tar.gz"
     LINUX_X64 = Sum "sne-$Version-x86_64-unknown-linux-musl.tar.gz"
 }
-
-# pacman versions cannot contain a hyphen.
-$aur = @{
-    PKGVER      = $Version.Replace('-', '')
-    PROFILE_SUM = $profileSum
-    X64_SUM     = Sum "sne-$Version-x86_64-unknown-linux-musl.tar.gz"
-    ARM64_SUM   = Sum "sne-$Version-aarch64-unknown-linux-musl.tar.gz"
-}
-
-Write-Manifest 'packaging/aur/PKGBUILD' @'
-# Maintainer: sne contributors <sne-sh@users.noreply.github.com>
-# Written by packaging/update-manifests.ps1 in https://github.com/sne-sh/sne. Do not edit by hand.
-pkgname=sne-bin
-_tag={{VERSION}}
-pkgver={{PKGVER}}
-pkgrel=1
-pkgdesc="Simple Node Environment: a fast Node.js version manager"
-arch=('x86_64' 'aarch64')
-url="https://github.com/sne-sh/sne"
-license=('MIT')
-provides=('sne')
-conflicts=('sne')
-source=("sne-profile-$_tag.sh::https://raw.githubusercontent.com/sne-sh/sne/$_tag/packaging/profile.sh")
-source_x86_64=("https://github.com/sne-sh/sne/releases/download/$_tag/sne-$_tag-x86_64-unknown-linux-musl.tar.gz")
-source_aarch64=("https://github.com/sne-sh/sne/releases/download/$_tag/sne-$_tag-aarch64-unknown-linux-musl.tar.gz")
-sha256sums=('{{PROFILE_SUM}}')
-sha256sums_x86_64=('{{X64_SUM}}')
-sha256sums_aarch64=('{{ARM64_SUM}}')
-
-package() {
-  cd "sne-$_tag-$CARCH-unknown-linux-musl"
-  install -Dm755 sne "$pkgdir/usr/bin/sne"
-  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
-  # Puts the default Node.js version on PATH for login shells.
-  install -Dm644 "$srcdir/sne-profile-$_tag.sh" "$pkgdir/etc/profile.d/sne.sh"
-}
-'@ $aur
-
-# What `makepkg --printsrcinfo` prints for the PKGBUILD above. The Packages workflow checks it.
-$tab = "`t"
-Write-Manifest 'packaging/aur/.SRCINFO' (@'
-pkgbase = sne-bin
->pkgdesc = Simple Node Environment: a fast Node.js version manager
->pkgver = {{PKGVER}}
->pkgrel = 1
->url = https://github.com/sne-sh/sne
->arch = x86_64
->arch = aarch64
->license = MIT
->provides = sne
->conflicts = sne
->source = sne-profile-{{VERSION}}.sh::https://raw.githubusercontent.com/sne-sh/sne/{{VERSION}}/packaging/profile.sh
->sha256sums = {{PROFILE_SUM}}
->source_x86_64 = {{DOWNLOADS}}/sne-{{VERSION}}-x86_64-unknown-linux-musl.tar.gz
->sha256sums_x86_64 = {{X64_SUM}}
->source_aarch64 = {{DOWNLOADS}}/sne-{{VERSION}}-aarch64-unknown-linux-musl.tar.gz
->sha256sums_aarch64 = {{ARM64_SUM}}
-
-pkgname = sne-bin
-'@ -replace '(?m)^>', $tab) $aur
 
 # winget wants one folder per version: manifests/s/sne-sh/sne/<version>/ in microsoft/winget-pkgs.
 $winget = "packaging/winget/manifests/s/sne-sh/sne"

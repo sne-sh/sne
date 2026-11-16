@@ -5,7 +5,7 @@ name: Publish
 #   crates.io and npm   Published with trusted publishing: each registry checks that this workflow
 #                       in this repository asked, and hands out a token that expires within
 #                       30 minutes. No token is stored in this repository.
-#   Manifests           Scoop, Homebrew, AUR and winget files are rewritten for the new release and
+#   Manifests           Scoop, Homebrew and winget files are rewritten for the new release and
 #                       proposed as a pull request to develop.
 #
 # Each registry job runs only once its repository variable is set to true (Settings, Secrets and
@@ -110,12 +110,12 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git switch -c "$branch"
-          git add bucket Formula packaging/aur packaging/winget
+          git add bucket Formula packaging/winget
           git commit -m "Update the package manager files for $TAG"
           git push --force origin "$branch"
           gh pr create --base develop --head "$branch" \
             --title "Package manager files for $TAG" \
-            --body "Written by the Publish workflow for release $TAG. Merging this updates Scoop and Homebrew once develop reaches main. The AUR and winget files still have to be submitted by hand; see CONTRIBUTING.md." \
+            --body "Written by the Publish workflow for release $TAG. Merging this updates Scoop and Homebrew once develop reaches main. The winget files still have to be submitted by hand; see CONTRIBUTING.md." \
             || echo "::warning title=Manifests::could not open the pull request. Allow it in Settings, Actions, General: 'Allow GitHub Actions to create and approve pull requests'. The branch $branch is pushed."
           gh workflow run ci.yml --ref "$branch"
           gh workflow run packages.yml --ref "$branch"

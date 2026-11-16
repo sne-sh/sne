@@ -48,7 +48,6 @@ setup wizard's uninstaller does this for you.
 | macOS package | `sudo rm /usr/local/bin/sne` |
 | Debian, Ubuntu | `sudo dpkg -r sne` |
 | Fedora, RHEL, openSUSE | `sudo rpm -e sne` |
-| Arch | `sudo pacman -R sne` |
 
 ### 2. Remove the setup line
 

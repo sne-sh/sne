@@ -8,7 +8,6 @@ on:
     paths:
       - bucket/**
       - Formula/**
-      - packaging/aur/**
       - packaging/winget/**
       - npm/**
       - .github/workflows/packages.yml
@@ -16,7 +15,6 @@ on:
     paths:
       - bucket/**
       - Formula/**
-      - packaging/aur/**
       - packaging/winget/**
       - npm/**
       - .github/workflows/packages.yml
@@ -136,26 +134,3 @@ jobs:
             exit 1
           fi
 
-  aur:
-    name: AUR
-    runs-on: ubuntu-latest
-    container: archlinux:base-devel
-    steps:
-      - uses: actions/checkout@v7
-      - name: Build and install the package
-        run: |
-          useradd -m build
-          cp -r packaging/aur /home/build/aur
-          chown -R build /home/build/aur
-          cd /home/build/aur
-          sudo -u build makepkg --noconfirm
-          # .SRCINFO is written by hand in update-manifests.ps1, so compare it with the real one.
-          sudo -u build makepkg --printsrcinfo > /tmp/SRCINFO
-          if ! diff -u .SRCINFO /tmp/SRCINFO > /tmp/srcinfo.diff; then
-            cat /tmp/srcinfo.diff
-            echo "::error title=AUR::.SRCINFO differs from makepkg --printsrcinfo:%0A$(sed ':a;N;$!ba;s/\n/%0A/g' /tmp/srcinfo.diff)"
-            exit 1
-          fi
-          pacman -U --noconfirm sne-bin-*.pkg.tar.zst
-          sne --version
-          test -f /etc/profile.d/sne.sh

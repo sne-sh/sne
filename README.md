@@ -75,7 +75,6 @@ system-wide; add the shell setup line below afterwards.
 | macOS (Intel and Apple silicon) | `sne-<version>-macos-universal.pkg` | `sudo installer -pkg <file> -target /` |
 | Debian, Ubuntu | `sne_<version>_amd64.deb` / `_arm64.deb` | `sudo dpkg -i <file>` |
 | Fedora, RHEL, openSUSE | `sne-<version>-1.x86_64.rpm` / `.aarch64.rpm` | `sudo rpm -i <file>` |
-| Arch | AUR package `sne-bin` | `yay -S sne-bin` (or any AUR helper) |
 | Any (portable) | `sne-<version>-<target>.tar.gz` | unpack and put `sne` on your `PATH` |
 
 The macOS package is not signed yet: use the command above, or right-click it in Finder and choose Open.
