@@ -26,7 +26,7 @@ Set these before running it to change what it does:
 
 | Variable | Effect |
 |---|---|
-| `SNE_VERSION` | Install this release, for example `0.1.0-beta.5`, instead of the latest |
+| `SNE_VERSION` | Install this release, for example `0.1.0`, instead of the latest |
 | `SNE_INSTALL_DIR` | Put `sne.exe` in this folder |
 | `SNE_NO_MODIFY_PATH=1` | Leave `PATH` alone |
 | `SNE_NO_PROFILE=1` | Leave the PowerShell profile alone |
@@ -45,7 +45,6 @@ it later.
 | Your Windows | Setup wizard | Portable zip |
 |---|---|---|
 | 64-bit (most PCs) | `sne-<version>-x64-setup.exe` | `sne-<version>-x86_64-pc-windows-msvc.zip` |
-| 32-bit | `sne-<version>-x86-setup.exe` | `sne-<version>-i686-pc-windows-msvc.zip` |
 | ARM64 | `sne-<version>-arm64-setup.exe` | `sne-<version>-aarch64-pc-windows-msvc.zip` |
 
 {% hint style="info" %}
@@ -72,8 +71,8 @@ Unzip the portable file anywhere, add the folder to your `PATH`, then do the
 [shell setup](shell-setup.md) yourself.
 
 {% hint style="warning" %}
-Node.js stopped publishing 32-bit Windows builds after version 22. On 32-bit Windows, sne can install
-Node.js 22 and older.
+sne has no build for 32-bit Windows. Node.js stopped publishing 32-bit Windows builds after version 22,
+and sne 0.1.0-beta.5 was the last sne for it.
 {% endhint %}
 
 ## macOS and Linux
@@ -92,7 +91,7 @@ It needs no root. The script:
 
 | Variable | Effect |
 |---|---|
-| `SNE_VERSION` | Install this release, for example `0.1.0-beta.5`, instead of the latest |
+| `SNE_VERSION` | Install this release, for example `0.1.0`, instead of the latest |
 | `SNE_INSTALL_DIR` | Put `sne` in this folder |
 | `SNE_NO_PROFILE=1` | Leave your shell profile alone |
 | `SNE_NO_NOTIFY=1` | Do not turn on [new version notifications](../guides/notifications.md) |
@@ -125,8 +124,7 @@ for every user of the machine and do not change any shell profile, so finish wit
 | macOS (Intel and Apple silicon) | `sne-<version>-macos-universal.pkg` | `sudo installer -pkg <file> -target /` |
 | Debian, Ubuntu | `sne_<version>_amd64.deb` or `_arm64.deb` | `sudo dpkg -i <file>` |
 | Fedora, RHEL, openSUSE | `sne-<version>-1.x86_64.rpm` or `.aarch64.rpm` | `sudo rpm -i <file>` |
-| Alpine | `sne_<version>_x86_64.apk` or `_aarch64.apk` | `sudo apk add --allow-untrusted <file>` |
-| Arch | `sne-<version>-1-x86_64.pkg.tar.zst` or `-aarch64` | `sudo pacman -U <file>` |
+| Arch | AUR package `sne-bin` | `yay -S sne-bin` (or any AUR helper) |
 
 {% hint style="info" %}
 The macOS package is not signed yet. Install it with the command above, or right-click it in Finder
@@ -141,17 +139,17 @@ Download `sne-<version>-<target>.tar.gz`, unpack it, and put `sne` somewhere on 
 |---|---|
 | `x86_64-apple-darwin`, `aarch64-apple-darwin` | macOS on Intel, macOS on Apple silicon |
 | `x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl` | Any Linux (static, no library requirements) |
-| `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu` | Recent glibc-based Linux |
 
 ## Install with Cargo
 
 You need a recent stable [Rust toolchain](https://rustup.rs). sne is on
-[crates.io](https://crates.io/crates/sne). While sne is in beta, the version must be given, because
-Cargo skips beta versions otherwise:
+[crates.io](https://crates.io/crates/sne):
 
 ```sh
-cargo install sne --version 0.1.0-beta.5
+cargo install sne
 ```
+
+Cargo skips beta versions unless you name one, for example `cargo install sne --version 0.2.0-beta.1`.
 
 Cargo builds sne and puts it in `~/.cargo/bin`, which rustup already added to your `PATH`. It does not
 change your shell profile, so add the [setup line](shell-setup.md) afterwards. On Windows you can skip

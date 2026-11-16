@@ -73,7 +73,7 @@ body:
         - Windows setup wizard
         - Portable zip or tar.gz
         - macOS .pkg
-        - Linux package (.deb, .rpm, .apk, Arch)
+        - Linux package (.deb, .rpm, AUR)
         - Built from source
     validations:
       required: true

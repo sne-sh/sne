@@ -29,7 +29,7 @@ irm https://raw.githubusercontent.com/sne-sh/sne/main/install.ps1 | iex
 
 It downloads the latest release, checks its SHA-256, puts `sne.exe` in `%LOCALAPPDATA%\Programs\sne`, adds
 that folder to your `PATH`, and adds the setup line to your PowerShell profile. Set `SNE_NO_MODIFY_PATH=1`
-or `SNE_NO_PROFILE=1` first to skip either step, or `SNE_VERSION=0.1.0-beta.5` to pick a release.
+or `SNE_NO_PROFILE=1` first to skip either step, or `SNE_VERSION=0.1.0` to pick a release.
 
 If you prefer a wizard, download a setup program from the
 [releases page](https://github.com/sne-sh/sne/releases). It does the same and adds an uninstaller.
@@ -38,15 +38,14 @@ The installers are not code-signed yet, so Windows SmartScreen will ask you to c
 | Your Windows | Setup wizard | Portable (unzip and run) |
 |---|---|---|
 | 64-bit (most PCs) | `sne-<version>-x64-setup.exe` | `sne-<version>-x86_64-pc-windows-msvc.zip` |
-| 32-bit | `sne-<version>-x86-setup.exe` | `sne-<version>-i686-pc-windows-msvc.zip` |
 | ARM64 | `sne-<version>-arm64-setup.exe` | `sne-<version>-aarch64-pc-windows-msvc.zip` |
 
 With [Scoop](https://scoop.sh): `scoop bucket add sne https://github.com/sne-sh/sne`, then
 `scoop install sne`.
 
 The portable zip holds only `sne.exe`: put it anywhere and add the shell setup line below yourself.
-Node.js stopped publishing 32-bit Windows builds after version 22, so 32-bit Windows can install
-Node 22 and older.
+There is no build for 32-bit Windows: Node.js stopped publishing one after version 22, and
+sne 0.1.0-beta.5 was the last sne for it.
 
 Windows PowerShell 5.1 blocks profile scripts by default. If the setup line does not run, allow local
 scripts once with `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
@@ -59,7 +58,7 @@ curl -fsSL https://raw.githubusercontent.com/sne-sh/sne/main/install.sh | sh
 
 It needs no root. It downloads the latest release, checks its SHA-256, puts `sne` in `~/.local/bin` and
 adds the setup lines to your bash, zsh or fish profile. Set `SNE_INSTALL_DIR` to change the folder,
-`SNE_NO_PROFILE=1` to leave your profile alone, or `SNE_VERSION=0.1.0-beta.5` to pick a release.
+`SNE_NO_PROFILE=1` to leave your profile alone, or `SNE_VERSION=0.1.0` to pick a release.
 
 With [Homebrew](https://brew.sh), on macOS or Linux; add the shell setup line below afterwards:
 
@@ -76,18 +75,17 @@ system-wide; add the shell setup line below afterwards.
 | macOS (Intel and Apple silicon) | `sne-<version>-macos-universal.pkg` | `sudo installer -pkg <file> -target /` |
 | Debian, Ubuntu | `sne_<version>_amd64.deb` / `_arm64.deb` | `sudo dpkg -i <file>` |
 | Fedora, RHEL, openSUSE | `sne-<version>-1.x86_64.rpm` / `.aarch64.rpm` | `sudo rpm -i <file>` |
-| Alpine | `sne_<version>_x86_64.apk` / `_aarch64.apk` | `sudo apk add --allow-untrusted <file>` |
-| Arch | `sne-<version>-1-x86_64.pkg.tar.zst` / `-aarch64` | `sudo pacman -U <file>` |
+| Arch | AUR package `sne-bin` | `yay -S sne-bin` (or any AUR helper) |
 | Any (portable) | `sne-<version>-<target>.tar.gz` | unpack and put `sne` on your `PATH` |
 
 The macOS package is not signed yet: use the command above, or right-click it in Finder and choose Open.
 Every file is listed with its SHA-256 in `SHA256SUMS.txt`.
 
 With a recent [Rust toolchain](https://rustup.rs), you can install from
-[crates.io](https://crates.io/crates/sne) instead. While sne is in beta, the version must be given:
+[crates.io](https://crates.io/crates/sne) instead:
 
 ```sh
-cargo install sne --version 0.1.0-beta.5
+cargo install sne
 ```
 
 With npm, yarn, pnpm or bun, the package is [`sne-cli`](https://www.npmjs.com/package/sne-cli) and the
@@ -220,7 +218,7 @@ sne connects to two places, and only for these reasons:
 
 - **nodejs.org** (or the mirror in `SNE_NODE_MIRROR`), to list and download Node.js versions.
 - **GitHub**, to look for a new version of sne: at most once a day while `sne install` runs, when
-  you run `sne self check` or `sne update`, and once a day if you turned on `sne notify`.
+  you run `sne self check` or `sne update`, and every 4 hours if you turned on `sne notify`.
 
 It sends nothing about you or your machine beyond what any download sends (your IP address and a
 `sne/<version>` user agent). There is no telemetry and no account. `SNE_NO_UPDATE_CHECK=1` stops the

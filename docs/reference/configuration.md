@@ -11,6 +11,25 @@ downloads from.
 | `SNE_NODE_MIRROR` | Base address for Node.js downloads | `https://nodejs.org/dist` |
 | `SNE_NO_UPDATE_CHECK` | Set to `1` to stop `sne install` from looking for a new sne version | Not set |
 | `SNE_NO_MODIFY_PATH` | Windows: set to `1` to stop `sne use`, `sne default` and `sne install` from adding the default Node version to your `PATH` | Not set |
+| `SNE_ARCH` | Processor type of the Node.js builds to install: `x64`, `arm64`, `x86`, `armv7l`, `ppc64le`, `s390x` or `riscv64` | This system's |
+| `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` | Proxy server for downloads, and the hosts that skip it | Not set |
+
+## Apple silicon and Windows on ARM
+
+Node.js 15 and older have no build for Apple silicon, and most versions before Node.js 20 have none for
+Windows on ARM. When you install one of those, sne installs the x64 build, which macOS runs with
+Rosetta 2 and Windows 11 with its built-in emulation, and says so. To always install a particular
+build, set `SNE_ARCH`, for example `SNE_ARCH=x64 sne install 22`.
+
+## Proxies and company certificates
+
+sne uses the proxy in `HTTPS_PROXY` (or `ALL_PROXY`), like curl does, and skips it for the hosts in
+`NO_PROXY`.
+
+HTTPS certificates are checked against your system's certificate store: the Windows certificate
+store, the macOS keychain, or the certificate bundle of your Linux distribution. If your company
+inspects HTTPS traffic and has added its certificate to the system, sne accepts it. On a Linux system
+with no certificate bundle, such as a slim container, sne uses the certificates built into it.
 
 On Alpine and other musl-based Linux systems, the default mirror is
 `https://unofficial-builds.nodejs.org/download/release`, because nodejs.org does not publish musl

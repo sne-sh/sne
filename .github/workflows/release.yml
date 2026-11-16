@@ -52,7 +52,6 @@ jobs:
       matrix:
         include:
           - { target: x86_64-pc-windows-msvc, os: windows-latest, arch: x64 }
-          - { target: i686-pc-windows-msvc, os: windows-latest, arch: x86 }
           - { target: aarch64-pc-windows-msvc, os: windows-11-arm, arch: arm64 }
     steps:
       - uses: actions/checkout@v7
@@ -146,8 +145,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { target: x86_64-unknown-linux-gnu, os: ubuntu-latest }
-          - { target: aarch64-unknown-linux-gnu, os: ubuntu-24.04-arm }
           - { target: x86_64-unknown-linux-musl, os: ubuntu-latest }
           - { target: aarch64-unknown-linux-musl, os: ubuntu-24.04-arm }
     steps:
@@ -190,7 +187,7 @@ jobs:
           merge-multiple: true
       - name: Version
         run: echo "TAG=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_ENV"
-      - name: Linux packages (deb, rpm, apk, Arch)
+      - name: Linux packages (deb, rpm)
         run: |
           go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
           export PATH="$(go env GOPATH)/bin:$PATH"
@@ -203,7 +200,7 @@ jobs:
             mkdir "work-$ARCH"
             tar -xzf "dist/sne-$TAG-$cpu-unknown-linux-musl.tar.gz" -C "work-$ARCH"
             envsubst '$VERSION $ARCH $BINARY' < packaging/nfpm.yaml > "work-$ARCH/nfpm.yaml"
-            for packager in deb rpm apk archlinux; do
+            for packager in deb rpm; do
               nfpm package --config "work-$ARCH/nfpm.yaml" --packager "$packager" --target dist/
             done
           done

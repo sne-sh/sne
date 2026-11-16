@@ -7,6 +7,8 @@ mod link;
 mod platform;
 mod resolve;
 mod shell;
+#[cfg(windows)]
+mod toast;
 mod version;
 mod version_file;
 #[cfg(windows)]
@@ -35,7 +37,12 @@ enum Cmd {
     /// With no version, installs what the project asks for in .nvmrc, .node-version
     /// or package.json.
     #[command(visible_alias = "i")]
-    Install { versions: Vec<String> },
+    Install {
+        versions: Vec<String>,
+        /// Also install the global npm packages of this installed version, at the same versions.
+        #[arg(long, value_name = "VERSION")]
+        reinstall_packages_from: Option<String>,
+    },
     /// Switch this shell to an installed version.
     ///
     /// With no version, uses what the project asks for.
@@ -118,7 +125,7 @@ enum Cmd {
     },
     /// Desktop notifications about new sne versions: `sne notify on`, `sne notify off`.
     ///
-    /// When on, sne checks once a day in the background. With no argument, shows the setting.
+    /// When on, sne checks every 4 hours in the background. With no argument, shows the setting.
     Notify {
         #[arg(value_enum)]
         state: Option<Toggle>,
@@ -145,7 +152,10 @@ enum Toggle {
 
 fn run() -> Result<i32> {
     match Cli::parse().command {
-        Cmd::Install { versions } => install::run(versions)?,
+        Cmd::Install {
+            versions,
+            reinstall_packages_from,
+        } => install::run(versions, reinstall_packages_from)?,
         Cmd::Use { auto: true, .. } => switch::use_auto()?,
         Cmd::Use { version, .. } => switch::use_version(version)?,
         Cmd::Default { version } => switch::set_default(&version)?,

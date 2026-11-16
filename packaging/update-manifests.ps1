@@ -61,7 +61,6 @@ function Write-Manifest([string]$path, [string]$template, [hashtable]$extra = @{
 
 $win = @{
     X64   = "sne-$Version-x86_64-pc-windows-msvc"
-    X86   = "sne-$Version-i686-pc-windows-msvc"
     ARM64 = "sne-$Version-aarch64-pc-windows-msvc"
 }
 
@@ -77,11 +76,6 @@ Write-Manifest 'bucket/sne.json' @'
             "hash": "{{X64_SUM}}",
             "extract_dir": "{{X64}}"
         },
-        "32bit": {
-            "url": "{{DOWNLOADS}}/{{X86}}.zip",
-            "hash": "{{X86_SUM}}",
-            "extract_dir": "{{X86}}"
-        },
         "arm64": {
             "url": "{{DOWNLOADS}}/{{ARM64}}.zip",
             "hash": "{{ARM64_SUM}}",
@@ -96,7 +90,6 @@ Write-Manifest 'bucket/sne.json' @'
 }
 '@ ($win + @{
         X64_SUM   = Sum "$($win.X64).zip"
-        X86_SUM   = Sum "$($win.X86).zip"
         ARM64_SUM = Sum "$($win.ARM64).zip"
     })
 
@@ -153,7 +146,7 @@ end
     LINUX_X64 = Sum "sne-$Version-x86_64-unknown-linux-musl.tar.gz"
 }
 
-# pacman versions cannot contain a hyphen. Same form as the Arch package in the release.
+# pacman versions cannot contain a hyphen.
 $aur = @{
     PKGVER      = $Version.Replace('-', '')
     PROFILE_SUM = $profileSum
@@ -247,9 +240,6 @@ Installers:
 - Architecture: x64
   InstallerUrl: {{DOWNLOADS}}/sne-{{VERSION}}-x64-setup.exe
   InstallerSha256: {{X64_SUM}}
-- Architecture: x86
-  InstallerUrl: {{DOWNLOADS}}/sne-{{VERSION}}-x86-setup.exe
-  InstallerSha256: {{X86_SUM}}
 - Architecture: arm64
   InstallerUrl: {{DOWNLOADS}}/sne-{{VERSION}}-arm64-setup.exe
   InstallerSha256: {{ARM64_SUM}}
@@ -257,7 +247,6 @@ ManifestType: installer
 ManifestVersion: 1.10.0
 '@ @{
     X64_SUM   = (Sum "sne-$Version-x64-setup.exe").ToUpperInvariant()
-    X86_SUM   = (Sum "sne-$Version-x86-setup.exe").ToUpperInvariant()
     ARM64_SUM = (Sum "sne-$Version-arm64-setup.exe").ToUpperInvariant()
 }
 
