@@ -2,7 +2,7 @@
 ;
 ; Build from the repository root after `cargo build --release`:
 ;   iscc installer\sne.iss
-; Options:  /DAppVersion=0.1.0  /DArch=x64|x86|arm64  /DSourceExe=path\to\sne.exe
+; Options:  /DAppVersion=0.1.0  /DArch=x64|arm64  /DSourceExe=path\to\sne.exe
 
 #ifndef AppVersion
   #define AppVersion "0.1.0"
@@ -41,8 +41,6 @@ SolidCompression=yes
 #if Arch == "arm64"
 ArchitecturesAllowed=arm64
 ArchitecturesInstallIn64BitMode=arm64
-#elif Arch == "x86"
-; 32-bit build: runs on every Windows, so no architecture limits.
 #else
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -51,7 +49,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 [Tasks]
 Name: "addtopath"; Description: "Add sne and Node.js to PATH (needed to run them from any terminal)"
 Name: "psprofile"; Description: "Set up PowerShell: switch Node versions automatically (adds one line to your profile)"
-Name: "notify"; Description: "Tell me when a new version of sne is available (adds a daily task to Task Scheduler)"; Flags: unchecked
+Name: "notify"; Description: "Tell me when a new version of sne is available (adds a task to Task Scheduler that checks every 4 hours)"; Flags: unchecked
 
 [Files]
 Source: "{#SourceExe}"; DestDir: "{app}"; Flags: ignoreversion
@@ -66,7 +64,7 @@ Filename: "pwsh.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{a
 Filename: "{app}\sne.exe"; Parameters: "notify on"; Flags: runhidden; Tasks: notify
 
 [UninstallRun]
-; Removes the daily check, if it was turned on.
+; Removes the update check, if it was turned on.
 Filename: "{app}\sne.exe"; Parameters: "notify off"; Flags: runhidden; RunOnceId: "SneNotifyOff"
 
 [Code]

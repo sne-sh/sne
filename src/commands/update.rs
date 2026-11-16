@@ -139,8 +139,8 @@ pub fn check(notify: bool) -> Result<()> {
     println!("What changed: {RELEASES_PAGE}");
     if notify && read_version(&notified_file()).as_ref() != Some(&latest) {
         os::show(
-            &format!("sne {latest} is ready to install"),
-            &format!("You have {running}. To update, open a terminal and run: sne update"),
+            "Update available",
+            &format!("sne {latest} is available. You have {running}. To update, run: sne update"),
             logo_file().as_deref(),
         )
         .context("could not show a desktop notification")?;
@@ -165,7 +165,6 @@ fn logo_file() -> Option<PathBuf> {
 fn release_target() -> Result<&'static str> {
     Ok(match (std::env::consts::OS, std::env::consts::ARCH) {
         ("windows", "x86_64") => "x86_64-pc-windows-msvc",
-        ("windows", "x86") => "i686-pc-windows-msvc",
         ("windows", "aarch64") => "aarch64-pc-windows-msvc",
         ("macos", "x86_64") => "x86_64-apple-darwin",
         ("macos", "aarch64") => "aarch64-apple-darwin",
@@ -240,8 +239,7 @@ fn installed_by(exe: &Path, latest: &Version) -> Option<(&'static str, String)> 
     } else if path.starts_with("/usr/bin/") {
         (
             "your system's package manager",
-            "the newer .deb, .rpm, .apk or Arch package from https://github.com/sne-sh/sne/releases"
-                .to_string(),
+            "the newer .deb or .rpm package from https://github.com/sne-sh/sne/releases".to_string(),
         )
     } else {
         return None;
@@ -354,7 +352,7 @@ fn remember_choice(choice: &str) {
 /// Node version is being installed; does nothing in CI, without a desktop, or after the user made
 /// a choice.
 ///
-/// On Windows they are never turned on without being asked. The daily check there is a scheduled
+/// On Windows they are never turned on without being asked. The check there is a scheduled
 /// task, and antivirus programs can take a program that registers one by itself for malware:
 /// Windows Defender has removed sne for it.
 pub fn enable_by_default() {
@@ -376,7 +374,7 @@ pub fn notify_on() -> Result<()> {
     let exe = std::env::current_exe().context("could not find the sne program")?;
     os::enable(&exe)?;
     remember_choice("on");
-    println!("Notifications are on: sne checks once a day and tells you when a new version is out.");
+    println!("Notifications are on: sne checks every 4 hours and tells you when a new version is out.");
     if cfg!(windows) {
         println!(
             "This added a task named \"sne update check\" to Task Scheduler. If your antivirus \
@@ -437,67 +435,9 @@ mod os {
     /// Keeps helper programs from opening a console window.
     const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
-    /// Registers sne as a notification sender for this user, then shows a toast that opens
-    /// the releases page when clicked. Texts arrive through environment variables.
-    const TOAST_SCRIPT: &str = r#"
-$ErrorActionPreference = 'Stop'
-function Esc($text) { [System.Security.SecurityElement]::Escape($text) }
-$id = 'sne.sne'
-$key = "HKCU:\Software\Classes\AppUserModelId\$id"
-if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
-Set-ItemProperty -Path $key -Name DisplayName -Value 'sne'
-$logo = ''
-if ($env:SNE_TOAST_ICON) {
-    Set-ItemProperty -Path $key -Name IconUri -Value $env:SNE_TOAST_ICON
-    $logo = "<image placement='appLogoOverride' src='$(Esc ([Uri]$env:SNE_TOAST_ICON).AbsoluteUri)'/>"
-}
-[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
-$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-$xml.LoadXml("<toast activationType='protocol' launch='$(Esc $env:SNE_TOAST_URL)'><visual><binding template='ToastGeneric'>$logo<text>$(Esc $env:SNE_TOAST_TITLE)</text><text>$(Esc $env:SNE_TOAST_BODY)</text></binding></visual><actions><action content='See what is new' activationType='protocol' arguments='$(Esc $env:SNE_TOAST_URL)'/></actions></toast>")
-$toast = New-Object Windows.UI.Notifications.ToastNotification $xml
-[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($id).Show($toast)
-"#;
-
+    /// A Windows notification with the sne name and logo, which opens the release notes.
     pub fn show(title: &str, body: &str, logo: Option<&Path>) -> Result<()> {
-        // Windows PowerShell (not PowerShell 7) is on every Windows 10 and 11 and can load WinRT types.
-        let mut command = Command::new("powershell.exe");
-        command
-            .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass"])
-            .args(["-EncodedCommand", &base64_utf16(TOAST_SCRIPT)])
-            .env("SNE_TOAST_TITLE", title)
-            .env("SNE_TOAST_BODY", body)
-            .env("SNE_TOAST_URL", RELEASES_PAGE)
-            .creation_flags(CREATE_NO_WINDOW);
-        if let Some(logo) = logo {
-            command.env("SNE_TOAST_ICON", logo);
-        }
-        run(&mut command)
-    }
-
-    /// PowerShell's `-EncodedCommand` takes base64 of the script as UTF-16LE.
-    fn base64_utf16(text: &str) -> String {
-        const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        let bytes: Vec<u8> = text.encode_utf16().flat_map(u16::to_le_bytes).collect();
-        let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
-        for chunk in bytes.chunks(3) {
-            let n = (u32::from(chunk[0]) << 16)
-                | (u32::from(*chunk.get(1).unwrap_or(&0)) << 8)
-                | u32::from(*chunk.get(2).unwrap_or(&0));
-            out.push(ALPHABET[(n >> 18) as usize & 63] as char);
-            out.push(ALPHABET[(n >> 12) as usize & 63] as char);
-            out.push(if chunk.len() > 1 {
-                ALPHABET[(n >> 6) as usize & 63] as char
-            } else {
-                '='
-            });
-            out.push(if chunk.len() > 2 {
-                ALPHABET[n as usize & 63] as char
-            } else {
-                '='
-            });
-        }
-        out
+        crate::toast::show(title, body, RELEASES_PAGE, logo)
     }
 
     fn xml_escape(text: &str) -> String {
@@ -507,7 +447,7 @@ $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
             .replace('"', "&quot;")
     }
 
-    /// A daily task for the current user. It also runs after a missed day, and it starts sne
+    /// A task for the current user that runs every 4 hours, and after a missed run. It starts sne
     /// through `conhost --headless` so no console window appears.
     pub fn enable(exe: &Path) -> Result<()> {
         let arguments = xml_escape(&format!("--headless \"{}\" self check --notify", exe.display()));
@@ -515,11 +455,16 @@ $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
             r#"<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
-    <Description>Tells you when a new version of sne is available. Remove with: sne notify off</Description>
+    <Description>Checks every 4 hours for a new version of sne and tells you when one is available. Remove with: sne notify off</Description>
   </RegistrationInfo>
   <Triggers>
     <CalendarTrigger>
-      <StartBoundary>2026-01-01T12:00:00</StartBoundary>
+      <Repetition>
+        <Interval>PT4H</Interval>
+        <Duration>P1D</Duration>
+        <StopAtDurationEnd>false</StopAtDurationEnd>
+      </Repetition>
+      <StartBoundary>2026-01-01T00:00:00</StartBoundary>
       <Enabled>true</Enabled>
       <ScheduleByDay>
         <DaysInterval>1</DaysInterval>
@@ -585,19 +530,6 @@ $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
             .output()
             .is_ok_and(|out| out.status.success())
     }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        #[test]
-        fn encodes_scripts_for_powershell() {
-            // "hi" as UTF-16LE is 68 00 69 00.
-            assert_eq!(base64_utf16("hi"), "aABpAA==");
-            assert_eq!(base64_utf16("a"), "YQA=");
-            assert_eq!(base64_utf16("abc"), "YQBiAGMA");
-        }
-    }
 }
 
 #[cfg(target_os = "macos")]
@@ -642,7 +574,7 @@ mod os {
             .replace('>', "&gt;")
     }
 
-    /// A launchd agent that runs the check at login and then once a day.
+    /// A launchd agent that runs the check at login and then every 4 hours.
     pub fn enable(exe: &Path) -> Result<()> {
         let file = plist();
         if let Some(parent) = file.parent() {
@@ -668,7 +600,7 @@ mod os {
   <key>RunAtLoad</key>
   <true/>
   <key>StartInterval</key>
-  <integer>86400</integer>
+  <integer>14400</integer>
 </dict>
 </plist>
 "#
@@ -732,7 +664,7 @@ mod os {
         run(Command::new("systemctl").arg("--user").args(args))
     }
 
-    /// A systemd user timer that runs the check once a day, and after a missed day.
+    /// A systemd user timer that runs the check every 4 hours, and after a missed run.
     pub fn enable(exe: &Path) -> Result<()> {
         let dir = unit_dir();
         fs::create_dir_all(&dir)?;
@@ -746,13 +678,13 @@ mod os {
         )?;
         fs::write(
             dir.join(format!("{UNIT}.timer")),
-            "[Unit]\nDescription=Daily check for a new version of sne\n\n[Timer]\nOnCalendar=daily\nPersistent=true\nRandomizedDelaySec=1h\n\n[Install]\nWantedBy=timers.target\n",
+            "[Unit]\nDescription=Check for a new version of sne every 4 hours\n\n[Timer]\nOnCalendar=00/4:00\nPersistent=true\nRandomizedDelaySec=30m\n\n[Install]\nWantedBy=timers.target\n",
         )?;
         systemctl(&["daemon-reload"])
             .and_then(|()| systemctl(&["enable", "--now", &format!("{UNIT}.timer")]))
             .with_context(|| {
                 format!(
-                    "could not start the systemd user timer. Without systemd, add this line to your crontab instead:\n  0 12 * * * \"{}\" self check --notify",
+                    "could not start the systemd user timer. Without systemd, add this line to your crontab instead:\n  0 */4 * * *\"{}\" self check --notify",
                     exe.display()
                 )
             })

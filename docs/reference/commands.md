@@ -46,14 +46,14 @@ version, you can use anything from the [version syntax](version-syntax.md).
 ## sne install
 
 ```
-sne install [VERSIONS]...
+sne install [VERSIONS]... [--reinstall-packages-from <VERSION>]
 ```
 
 Installs one or more versions. With several versions, the downloads run in parallel. With no version,
 installs what the project asks for in its [version file](../guides/version-files.md).
 
 Each download is checked against the SHA-256 published by nodejs.org. An interrupted install leaves
-nothing behind.
+nothing behind. A dropped connection or a busy server is tried again twice before sne gives up.
 
 ```sh
 sne install lts
@@ -61,6 +61,20 @@ sne install 20 22 24
 sne install ">=20 <23"
 sne install
 ```
+
+| Option | Description |
+|---|---|
+| `--reinstall-packages-from <VERSION>` | Also install the global npm packages of an installed version, at the same versions |
+
+Global npm packages belong to one Node version, so a new version starts without them. To bring
+them along:
+
+```sh
+sne install 24 --reinstall-packages-from 22
+```
+
+sne reads which packages Node 22 has and runs `npm install --global` with them in Node 24. npm and
+corepack come with Node and are left out, and so are packages added with `npm link`.
 
 Short form: `sne i`.
 
@@ -118,6 +132,10 @@ sne uninstall <VERSION>
 ```
 
 Removes an installed version. Short form: `sne rm`.
+
+The version is moved aside in one step before it is deleted, so it is either removed or left as it
+was, never half removed. If a program still runs from it, the uninstall still succeeds, and sne deletes
+the remaining files the next time it installs or uninstalls.
 
 ## sne current
 
@@ -222,7 +240,7 @@ Asks GitHub whether a newer version of sne exists and prints the result.
 
 | Option | Effect |
 |---|---|
-| `--notify` | Also show a desktop notification, once per new version. The daily background check uses this. |
+| `--notify` | Also show a desktop notification, once per new version. The background check uses this. |
 
 ## sne notify
 

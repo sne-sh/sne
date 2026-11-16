@@ -3,7 +3,7 @@
 #   irm https://raw.githubusercontent.com/sne-sh/sne/main/install.ps1 | iex
 #
 # Optional settings, as environment variables set before running:
-#   SNE_VERSION         release tag to install, for example 0.1.0-beta.5 (default: latest)
+#   SNE_VERSION         release tag to install, for example 0.1.0 (default: latest)
 #   SNE_INSTALL_DIR     where sne.exe goes (default: %LOCALAPPDATA%\Programs\sne)
 #   SNE_NO_MODIFY_PATH  set to 1 to leave PATH alone
 #   SNE_NO_PROFILE      set to 1 to leave the PowerShell profile alone
@@ -35,7 +35,7 @@ function Install-Sne {
     $target = switch ($arch) {
         'AMD64' { 'x86_64-pc-windows-msvc' }
         'ARM64' { 'aarch64-pc-windows-msvc' }
-        'x86' { 'i686-pc-windows-msvc' }
+        'x86' { throw 'sne has no build for 32-bit Windows. sne 0.1.0-beta.5 was the last one, and Node.js itself stopped publishing 32-bit Windows builds after version 22.' }
         default { throw "sne has no build for this processor ($arch)." }
     }
 

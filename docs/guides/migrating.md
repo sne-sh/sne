@@ -12,6 +12,7 @@ sne reads the same `.nvmrc` and `.node-version` files, so your projects need no 
 | Set the default | `nvm alias default 22` | `fnm default 22` | `sne default 22` |
 | List installed | `nvm ls` | `fnm ls` | `sne ls` |
 | List available | `nvm ls-remote` | `fnm ls-remote` | `sne ls-remote` |
+| Keep global packages | `nvm install 22 --reinstall-packages-from=20` | (none) | `sne install 22 --reinstall-packages-from 20` |
 | Run one command | `nvm exec 20 npm test` | `fnm exec --using 20 npm test` | `sne exec 20 -- npm test` |
 | Remove a version | `nvm uninstall 18` | `fnm uninstall 18` | `sne uninstall 18` |
 
@@ -24,8 +25,9 @@ sne reads the same `.nvmrc` and `.node-version` files, so your projects need no 
 5. Set your default: `sne default 22`.
 
 {% hint style="warning" %}
-sne does not import the versions that nvm or fnm installed, and it does not carry over global npm
-packages. Install the versions again with sne, then reinstall the global packages you need.
+sne does not import the versions that nvm or fnm installed, and it does not carry over their global npm
+packages. Install the versions again with sne, then reinstall the global packages you need. Between
+versions installed with sne, `sne install 24 --reinstall-packages-from 22` brings them along.
 {% endhint %}
 
 ## Differences to know

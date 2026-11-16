@@ -1,4 +1,4 @@
-# Template for the Linux packages (deb, rpm, apk, Arch), built with nfpm in the release workflow.
+# Template for the Linux packages (deb, rpm), built with nfpm in the release workflow.
 # ${VERSION}, ${ARCH} and ${BINARY} are filled in with envsubst.
 name: sne
 arch: ${ARCH}
