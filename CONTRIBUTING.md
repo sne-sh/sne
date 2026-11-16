@@ -135,11 +135,14 @@ Write in short, plain sentences. Many readers are not native English speakers.
 
 | Branch | Purpose | Who can push |
 |---|---|---|
-| `develop` | Where all work lands first. Pull requests target it. | Maintainers only; everyone else through a pull request |
-| `main` | What is released. The install scripts and the website are served from it. | Maintainers only |
+| `develop` | Where all work lands first. Pull requests target it. | Nobody directly: everything goes through a pull request |
+| `main` | What is released. The install scripts and the website are served from it. | Nobody directly: `develop` is brought to it with a pull request |
 
-Both branches are protected. A pull request needs green checks and a maintainer's approval before
-it is merged.
+Both branches are protected: they cannot be deleted or force-pushed, and changes arrive only through a
+pull request. A pull request can be merged once these checks pass: `Test` on Linux (x64 and ARM),
+macOS and Windows, `Installer scripts`, and `Real install` on Linux, macOS and Windows. No approval is
+required, because the project has one maintainer, and GitHub does not let anyone approve their own
+pull request. A maintainer still reads every pull request before merging it.
 
 ## Releases
 
