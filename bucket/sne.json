@@ -1,23 +1,18 @@
 {
-    "version": "0.1.0-beta.5",
+    "version": "0.1.0",
     "description": "Simple Node Environment: a fast, cross-platform Node.js version manager",
     "homepage": "https://sne-sh.github.io/sne/",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.5/sne-0.1.0-beta.5-x86_64-pc-windows-msvc.zip",
-            "hash": "676d1287e80a63c5bd3b1082c3473d173b52ce8dec3926e6f97857510f98e01b",
-            "extract_dir": "sne-0.1.0-beta.5-x86_64-pc-windows-msvc"
-        },
-        "32bit": {
-            "url": "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.5/sne-0.1.0-beta.5-i686-pc-windows-msvc.zip",
-            "hash": "75004b9a2cc8d6a2527ccdc7432172b899a91cdad53eb2be83b76abd45342d83",
-            "extract_dir": "sne-0.1.0-beta.5-i686-pc-windows-msvc"
+            "url": "https://github.com/sne-sh/sne/releases/download/0.1.0/sne-0.1.0-x86_64-pc-windows-msvc.zip",
+            "hash": "3a3aaf6bd47c1e0f72fa1bb0db41d444952e140e4b61e1f5bf5736a26938cddc",
+            "extract_dir": "sne-0.1.0-x86_64-pc-windows-msvc"
         },
         "arm64": {
-            "url": "https://github.com/sne-sh/sne/releases/download/0.1.0-beta.5/sne-0.1.0-beta.5-aarch64-pc-windows-msvc.zip",
-            "hash": "2b068ed9876c00358ca9f95ebbe3cff8a155d3229efdc2d550c9693dcc90ef67",
-            "extract_dir": "sne-0.1.0-beta.5-aarch64-pc-windows-msvc"
+            "url": "https://github.com/sne-sh/sne/releases/download/0.1.0/sne-0.1.0-aarch64-pc-windows-msvc.zip",
+            "hash": "8e2c91fda98a2a1109d31cc0f7c2a0fe671939c526fc5709f4ba28955ea35a10",
+            "extract_dir": "sne-0.1.0-aarch64-pc-windows-msvc"
         }
     },
     "bin": "sne.exe",
