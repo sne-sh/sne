@@ -131,15 +131,31 @@ pub fn unalias(name: &str) -> Result<()> {
 
 pub fn uninstall(input: &str) -> Result<()> {
     let version = resolve_installed(input)?;
+    // Move the version out of the way in one step first. Deleting in place stops at the first
+    // file that is in use, such as a running node.exe on Windows, and leaves half a version
+    // behind that looks installed but does not work. A move either happens or changes nothing.
+    // The `.tmp-` name makes the next `sne install` clean it up if it cannot be deleted now.
+    let trash = dirs::versions().join(format!(".tmp-remove-{version}-{}", std::process::id()));
+    fs::rename(dirs::version_dir(version), &trash).with_context(|| {
+        format!(
+            "could not remove Node {version}: it is in use. Close the programs that run it \
+             (node, npm, an editor's terminal) and try again. Nothing was changed"
+        )
+    })?;
     for (name, target) in aliases() {
         if target == version {
             link::remove(&dirs::aliases().join(&name))?;
             println!("Removed alias {name}, which pointed to {version}");
         }
     }
-    fs::remove_dir_all(dirs::version_dir(version))
-        .with_context(|| format!("could not remove Node {version}; is it still running?"))?;
-    println!("Uninstalled Node {version}");
+    super::install::remove_stale_temp_dirs();
+    if trash.exists() {
+        println!(
+            "Uninstalled Node {version}. A program still runs from it, so some of its files stay              until that program ends; sne deletes them the next time it installs or uninstalls."
+        );
+    } else {
+        println!("Uninstalled Node {version}");
+    }
     if link::version(&default_link()).is_none() && !dirs::installed().is_empty() {
         println!("No default version is set now. Run `sne default <version>` to choose one.");
     }

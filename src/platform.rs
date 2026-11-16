@@ -11,7 +11,11 @@ pub fn os() -> &'static str {
     }
 }
 
-pub fn arch() -> &'static str {
+/// CPU types that Node.js publishes builds for, by their name on nodejs.org.
+const KNOWN_ARCHES: [&str; 7] = ["x64", "arm64", "x86", "armv7l", "ppc64le", "s390x", "riscv64"];
+
+/// The processor sne was built for, by its name on nodejs.org.
+fn native_arch() -> &'static str {
     match std::env::consts::ARCH {
         "x86_64" => "x64",
         "aarch64" => "arm64",
@@ -19,6 +23,42 @@ pub fn arch() -> &'static str {
         "arm" => "armv7l",
         "powerpc64" => "ppc64le",
         other => other,
+    }
+}
+
+/// Whether the user chose the processor type with `SNE_ARCH`.
+pub fn arch_is_chosen() -> bool {
+    std::env::var_os("SNE_ARCH").is_some_and(|v| !v.is_empty())
+}
+
+/// Processor type of the Node builds to install. `SNE_ARCH` chooses another one, for example
+/// `x64` on an Apple silicon Mac.
+pub fn arch() -> anyhow::Result<&'static str> {
+    let Ok(wanted) = std::env::var("SNE_ARCH") else {
+        return Ok(native_arch());
+    };
+    let wanted = wanted.trim();
+    if wanted.is_empty() {
+        return Ok(native_arch());
+    }
+    KNOWN_ARCHES
+        .into_iter()
+        .find(|known| known.eq_ignore_ascii_case(wanted))
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "SNE_ARCH is `{wanted}`, which is not a processor type of Node.js. Use one of: {}",
+                KNOWN_ARCHES.join(", ")
+            )
+        })
+}
+
+/// Another build that runs on this system when Node has none for its own processor. Node 15 and
+/// older have no build for Apple silicon, and versions before Node 20 mostly none for Windows on ARM. Both
+/// systems run x64 programs: macOS with Rosetta 2, Windows 11 with its built-in emulation.
+pub fn emulated_arch(os: &str, arch: &str) -> Option<&'static str> {
+    match (os, arch) {
+        ("darwin" | "win", "arm64") => Some("x64"),
+        _ => None,
     }
 }
 
@@ -85,6 +125,14 @@ mod tests {
             archive_name("linux", "x64", true, v),
             "node-v22.11.0-linux-x64-musl.tar.xz"
         );
+    }
+
+    #[test]
+    fn emulation_only_where_the_system_provides_it() {
+        assert_eq!(emulated_arch("darwin", "arm64"), Some("x64"));
+        assert_eq!(emulated_arch("win", "arm64"), Some("x64"));
+        assert_eq!(emulated_arch("linux", "arm64"), None);
+        assert_eq!(emulated_arch("darwin", "x64"), None);
     }
 
     #[test]

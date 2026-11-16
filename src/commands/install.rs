@@ -3,7 +3,7 @@ use std::io::Read;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Result, bail};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use super::{default_link, report_default_path, shell_link};
@@ -15,7 +15,15 @@ use crate::{dirs, extract, index, link, platform, version_file};
 /// Versions downloaded at the same time by `sne install a b c`.
 const PARALLEL_INSTALLS: usize = 4;
 
-pub fn run(specs: Vec<String>) -> Result<()> {
+/// `reinstall_from` names an installed version whose global npm packages are installed again
+/// into each version installed here.
+pub fn run(specs: Vec<String>, reinstall_from: Option<String>) -> Result<()> {
+    // A mistyped version should stop before anything is downloaded.
+    let reinstall_from = reinstall_from
+        .as_deref()
+        .map(super::resolve_installed)
+        .transpose()
+        .context("--reinstall-packages-from must name an installed version")?;
     // Runs beside the install and never delays it.
     super::update::refresh_in_background();
     let specs = if specs.is_empty() {
@@ -29,20 +37,37 @@ pub fn run(specs: Vec<String>) -> Result<()> {
         specs
     };
 
-    let (os, arch, musl) = (platform::os(), platform::arch(), platform::is_musl());
-    let key = platform::index_key(os, arch, musl);
+    let (os, arch, musl) = (platform::os(), platform::arch()?, platform::is_musl());
+    // A build that runs under emulation is a fallback, never chosen over the user's SNE_ARCH.
+    let fallback = platform::emulated_arch(os, arch).filter(|_| !platform::arch_is_chosen());
     let releases = index::load()?;
-    let mut versions: Vec<Version> = Vec::new();
-    for input in &specs {
+    let pick = |spec: &Spec, arch: &str| {
+        let key = platform::index_key(os, arch, musl);
         let available = releases
             .iter()
             .filter(|r| r.files.is_empty() || r.files.contains(&key))
             .map(|r| (r.version, r.lts.as_deref()));
-        let version = Spec::parse(input)?
-            .pick(available)
-            .ok_or_else(|| anyhow!("no Node release matches `{input}` for {os}-{arch}"))?;
-        if !versions.contains(&version) {
-            versions.push(version);
+        spec.pick(available)
+    };
+    let mut versions: Vec<(Version, &'static str)> = Vec::new();
+    for input in &specs {
+        let spec = Spec::parse(input)?;
+        let (version, build) = match (pick(&spec, arch), fallback) {
+            (Some(version), _) => (version, arch),
+            (None, Some(other)) => match pick(&spec, other) {
+                Some(version) => {
+                    println!(
+                        "Node {version} has no {os}-{arch} build. Installing the {other} build, \
+                         which this system runs under emulation."
+                    );
+                    (version, other)
+                }
+                None => bail!("no Node release matches `{input}` for {os}-{arch}"),
+            },
+            (None, None) => bail!("no Node release matches `{input}` for {os}-{arch}"),
+        };
+        if !versions.iter().any(|(v, _)| *v == version) {
+            versions.push((version, build));
         }
     }
 
@@ -55,9 +80,9 @@ pub fn run(specs: Vec<String>) -> Result<()> {
         let results: Vec<Result<bool>> = std::thread::scope(|scope| {
             let workers: Vec<_> = batch
                 .iter()
-                .map(|&v| {
+                .map(|&(v, build)| {
                     let progress = &progress;
-                    scope.spawn(move || install_one(v, progress))
+                    scope.spawn(move || install_one(v, build, progress))
                 })
                 .collect();
             workers
@@ -65,7 +90,7 @@ pub fn run(specs: Vec<String>) -> Result<()> {
                 .map(|w| w.join().expect("install thread panicked"))
                 .collect()
         });
-        for (version, result) in batch.iter().zip(results) {
+        for ((version, _), result) in batch.iter().zip(results) {
             match result {
                 Ok(true) => println!("Installed Node {version}"),
                 Ok(false) => println!("Node {version} is already installed"),
@@ -77,9 +102,21 @@ pub fn run(specs: Vec<String>) -> Result<()> {
         }
     }
 
+    if let Some(from) = reinstall_from {
+        for &(version, _) in &versions {
+            if version == from || !dirs::version_dir(version).is_dir() {
+                continue;
+            }
+            if let Err(err) = reinstall_packages(from, version) {
+                failures += 1;
+                eprintln!("sne: {err:#}");
+            }
+        }
+    }
+
     // The first version ever installed becomes the default, so new shells have a Node.
     if link::version(&default_link()).is_none()
-        && let Some(&first) = versions.iter().find(|v| dirs::version_dir(**v).is_dir())
+        && let Some(&(first, _)) = versions.iter().find(|(v, _)| dirs::version_dir(*v).is_dir())
     {
         link::create(&dirs::version_dir(first), &default_link())?;
         println!("Node {first} is now the default");
@@ -97,12 +134,99 @@ pub fn run(specs: Vec<String>) -> Result<()> {
 }
 
 /// Returns `false` when the version was already installed.
-fn install_one(version: Version, progress: &MultiProgress) -> Result<bool> {
+/// Installs the global npm packages of `from` into `to`, at the same versions.
+fn reinstall_packages(from: Version, to: Version) -> Result<()> {
+    let (packages, skipped) = global_packages(&global_modules(from));
+    for name in &skipped {
+        println!("Skipping {name}: it was added with `npm link`, or its name or version is not one npm uses");
+    }
+    if packages.is_empty() {
+        println!("Node {from} has no global npm packages to install into Node {to}");
+        return Ok(());
+    }
+    println!(
+        "Installing the global packages of Node {from} into Node {to}: {}",
+        packages.join(" ")
+    );
+    let mut command = vec!["npm".to_string(), "install".to_string(), "--global".to_string()];
+    command.extend(packages);
+    let code = super::switch::exec(&to.to_string(), &command)?;
+    if code != 0 {
+        bail!("npm could not install the global packages of Node {from} into Node {to} (exit code {code})");
+    }
+    Ok(())
+}
+
+/// Where npm keeps the global packages of an installed version.
+fn global_modules(version: Version) -> std::path::PathBuf {
+    let dir = dirs::version_dir(version);
+    if cfg!(windows) {
+        dir.join("node_modules")
+    } else {
+        dir.join("lib").join("node_modules")
+    }
+}
+
+fn is_link(path: &Path) -> bool {
+    fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink())
+}
+
+/// The global packages in `root` as `name@version`, sorted, and the names that were skipped.
+///
+/// The folder is read instead of asking npm, which is faster and works even when that npm does
+/// not. npm and corepack come with Node itself. A package added with `npm link` is a link to a
+/// folder of the user's, which cannot be installed from the registry. Names and versions must use
+/// only the characters npm allows, because they are passed to npm on its command line.
+fn global_packages(root: &Path) -> (Vec<String>, Vec<String>) {
+    let (mut found, mut skipped) = (Vec::new(), Vec::new());
+    let name_ok = |c: char| c.is_ascii_alphanumeric() || matches!(c, '-' | '.' | '_' | '~' | '/' | '@');
+    let version_ok = |c: char| c.is_ascii_alphanumeric() || matches!(c, '-' | '.' | '+');
+    let mut consider = |name: String, dir: &Path| {
+        if matches!(name.as_str(), "npm" | "corepack") || name.starts_with('.') {
+            return;
+        }
+        let version = fs::read_to_string(dir.join("package.json"))
+            .ok()
+            .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+            .and_then(|manifest| manifest["version"].as_str().map(str::to_string));
+        match version {
+            Some(version)
+                if !is_link(dir)
+                    && name.chars().all(name_ok)
+                    && !version.is_empty()
+                    && version.chars().all(version_ok) =>
+            {
+                found.push(format!("{name}@{version}"));
+            }
+            _ => skipped.push(name),
+        }
+    };
+    for entry in fs::read_dir(root).into_iter().flatten().flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        // Scoped packages, such as @angular/cli, sit one folder deeper.
+        if name.starts_with('@') && !is_link(&entry.path()) {
+            for inner in fs::read_dir(entry.path()).into_iter().flatten().flatten() {
+                consider(
+                    format!("{name}/{}", inner.file_name().to_string_lossy()),
+                    &inner.path(),
+                );
+            }
+        } else {
+            consider(name, &entry.path());
+        }
+    }
+    found.sort();
+    skipped.sort();
+    (found, skipped)
+}
+
+/// `arch` is the processor type of the build, which differs from this system's under emulation.
+fn install_one(version: Version, arch: &str, progress: &MultiProgress) -> Result<bool> {
     let dest = dirs::version_dir(version);
     if dest.is_dir() {
         return Ok(false);
     }
-    let file = platform::archive_name(platform::os(), platform::arch(), platform::is_musl(), version);
+    let file = platform::archive_name(platform::os(), arch, platform::is_musl(), version);
     let release_url = format!("{}/{version}", platform::mirror());
 
     let install = || -> Result<()> {
@@ -185,20 +309,24 @@ fn move_into_place(temp: &Path, dest: &Path) -> Result<()> {
 }
 
 /// Leftovers from installs that were interrupted more than an hour ago.
-fn remove_stale_temp_dirs() {
+/// Also removes versions that `sne uninstall` moved aside but could not delete yet, because a
+/// program was still running from them; those are never in use by sne, so they go at once.
+pub(super) fn remove_stale_temp_dirs() {
     let Ok(entries) = fs::read_dir(dirs::versions()) else {
         return;
     };
     for entry in entries.flatten() {
-        if !entry.file_name().to_string_lossy().starts_with(".tmp-") {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if !name.starts_with(".tmp-") {
             continue;
         }
-        let old = entry
-            .metadata()
-            .and_then(|m| m.modified())
-            .ok()
-            .and_then(|m| SystemTime::now().duration_since(m).ok())
-            .is_some_and(|age| age > Duration::from_secs(60 * 60));
+        let old = name.starts_with(".tmp-remove-")
+            || entry
+                .metadata()
+                .and_then(|m| m.modified())
+                .ok()
+                .and_then(|m| SystemTime::now().duration_since(m).ok())
+                .is_some_and(|age| age > Duration::from_secs(60 * 60));
         if old {
             let path = entry.path();
             let _ = if path.is_dir() {
@@ -207,5 +335,38 @@ fn remove_stale_temp_dirs() {
                 fs::remove_file(&path)
             };
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn finds_global_packages_to_install_again() {
+        let root = std::env::temp_dir().join(format!("sne-globals-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let package = |path: &str, json: &str| {
+            let dir = root.join(path);
+            fs::create_dir_all(&dir).unwrap();
+            fs::write(dir.join("package.json"), json).unwrap();
+        };
+        package("npm", r#"{"version":"10.9.0"}"#);
+        package("corepack", r#"{"version":"0.29.4"}"#);
+        package("typescript", r#"{"name":"typescript","version":"5.6.3"}"#);
+        package("@angular/cli", r#"{"version":"18.2.11"}"#);
+        package("JSONStream", r#"{"version":"1.3.5"}"#);
+        package("bad&name", r#"{"version":"1.0.0"}"#);
+        package("odd-version", r#"{"version":"1.0.0 && calc"}"#);
+        package("no-version", r#"{"name":"no-version"}"#);
+        fs::create_dir_all(root.join(".bin")).unwrap();
+
+        let (found, skipped) = global_packages(&root);
+        let _ = fs::remove_dir_all(&root);
+        assert_eq!(
+            found,
+            ["@angular/cli@18.2.11", "JSONStream@1.3.5", "typescript@5.6.3"]
+        );
+        assert_eq!(skipped, ["bad&name", "no-version", "odd-version"]);
     }
 }
