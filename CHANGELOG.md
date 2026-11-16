@@ -1,5 +1,66 @@
 # Changelog
 
+## 0.1.0 (2026-11-16)
+
+The first stable release. If you run a beta, `sne update` moves you to it. From now on a stable sne is
+offered stable releases only.
+
+### Security
+
+- Linux and macOS: an altered or damaged Node.js archive can no longer write files outside the folder
+  it is unpacked into. The archive is unpacked while it downloads, before its SHA-256 can be checked,
+  and a link in it followed by a file "inside" that link could write anywhere the user can. Now links
+  must point inside the install folder, nothing is written through a link, a hard link may only name
+  another file of the archive, and an absolute path is skipped. The checksum still failed in that
+  case, but too late. Please update.
+- Linux and macOS: setuid, setgid and sticky bits in an archive are dropped. They mattered when sne ran
+  as root, for example in a container.
+- Windows: sne shows its notifications itself, through the Windows API. It used to start Windows
+  PowerShell with an encoded script from a scheduled task, which is also how a lot of malware behaves
+  and what antivirus programs look for.
+
+### New
+
+- `sne install <version> --reinstall-packages-from <installed version>` installs the global npm
+  packages of one version into another, at the same versions. Global packages belong to one Node
+  version, so a new version used to start without them.
+
+### Changes
+
+- Downloads are tried again, twice, after a dropped connection or a busy server (HTTP 5xx or 429).
+  One hiccup used to fail the whole install. A download that stops sending for good ends after 30
+  minutes instead of waiting forever.
+- `sne uninstall` moves the version aside before deleting it, so a version in use is never left half
+  removed. Before, a running `node` could stop the delete halfway, after its aliases were gone.
+- New version notifications check every 4 hours instead of once a day, so you hear about a release on
+  the day it comes out. The notification reads "Update available" with the new version. If you turned
+  notifications on before, run `sne notify on` once more to switch to the new schedule.
+- HTTPS certificates are checked against the system's certificate store, like a browser or curl does.
+  Behind a company proxy that inspects HTTPS, every download used to fail with a certificate error.
+  A Linux system with no certificate bundle, such as a slim container, still works with the
+  certificates built into sne.
+- Apple silicon and Windows on ARM: a Node version with no build for the processor, such as Node 14 on
+  a Mac with an M chip, is installed as its x64 build, which runs under emulation. Before, sne said no
+  release matched.
+- `SNE_ARCH` chooses the processor type of the Node builds to install, for example `SNE_ARCH=x64`.
+- Proxies set in `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` are now documented.
+- `cargo install sne` no longer needs `--version`.
+- On npm, a stable release is `latest` and a beta is `next`: `npm install -g sne-cli` gives the stable
+  version, and `npm install -g sne-cli@next` the newest beta.
+
+### Removed
+
+Fewer, better-tested files. Nobody on a supported system loses anything.
+
+- **32-bit Windows.** Node.js stopped publishing 32-bit Windows builds after version 22, which reaches
+  its end of life in April 2027, and Windows 11 has no 32-bit edition. 0.1.0-beta.5 is the last sne for
+  it. On a 64-bit Windows, `SNE_ARCH=x86` still installs 32-bit Node.js builds.
+- **The glibc Linux files** (`*-unknown-linux-gnu.tar.gz`). The static `*-unknown-linux-musl` files
+  run on every Linux, and the packages, `install.sh`, `sne update`, Homebrew and npm already used them.
+- **The Alpine `.apk` and the Arch package file.** On Alpine or Arch, remove the package
+  (`sudo apk del sne` or `sudo pacman -R sne`), then install with `install.sh`, which `sne update` keeps
+  up to date. There is no AUR package.
+
 ## 0.1.0-beta.5 (2026-11-13)
 
 This release is about security. Please update.

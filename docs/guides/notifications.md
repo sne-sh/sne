@@ -29,7 +29,7 @@ installed. For the macOS `.pkg`, install the newer package.
 
 ## Desktop notifications
 
-sne checks once a day in the background. When a new version is out, your system shows a notification
+sne checks every 4 hours in the background. When a new version is out, your system shows a notification
 with the new version and the command to run. Each version notifies once.
 
 On macOS and Linux desktops, sne turns notifications on by itself the first time you run
@@ -46,7 +46,7 @@ sne notify on     # turn them on
 ```
 
 {% hint style="warning" %}
-On Windows the daily check is a task in Task Scheduler. sne is not code-signed yet, and antivirus
+On Windows the check is a task in Task Scheduler. sne is not code-signed yet, and antivirus
 programs can treat an unsigned program that adds a scheduled task as malware. Windows Defender has
 removed sne for this reason. That is why sne never adds the task without being asked. If it happens to
 you, see [Troubleshooting](../help/troubleshooting.md#windows-defender-removed-sne).
@@ -54,9 +54,9 @@ you, see [Troubleshooting](../help/troubleshooting.md#windows-defender-removed-s
 
 ## What it sets up
 
-| System | Daily check | Notification |
+| System | Check every 4 hours | Notification |
 |---|---|---|
-| Windows | A task named **sne update check** in Task Scheduler, for your user only | A Windows notification with the sne logo; clicking it opens the release notes |
+| Windows | A task named **sne update check** in Task Scheduler, for your user only | A Windows notification from sne with its logo, shown by sne itself (no PowerShell); clicking it opens the release notes |
 | macOS | A launchd agent in `~/Library/LaunchAgents` | A Notification Center message (macOS shows its own icon for it) |
 | Linux | A systemd user timer named `sne-update-check` | `notify-send` with the sne logo, from the `libnotify` package |
 

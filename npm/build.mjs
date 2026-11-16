@@ -3,8 +3,8 @@
 //   sne-cli             the launcher (npm/sne), with the packages below as optionalDependencies
 //   sne-<os>-<cpu>      one per system, holding the sne program from the release
 //
-//   node npm/build.mjs 0.1.0-beta.4             build only
-//   node npm/build.mjs 0.1.0-beta.4 --publish   build, then publish to npm what is not there yet
+//   node npm/build.mjs 0.1.0             build only
+//   node npm/build.mjs 0.1.0 --publish   build, then publish to npm what is not there yet
 //
 // The programs come from the release on GitHub and are checked against its SHA256SUMS.txt, so the
 // release must be published first. Needs Node.js 18 or newer.
@@ -23,7 +23,6 @@ const repo = 'https://github.com/sne-sh/sne';
 // The Linux builds are static, so one works on every distribution, glibc or musl.
 const systems = [
   { os: 'win32', cpu: 'x64', target: 'x86_64-pc-windows-msvc', label: 'Windows x64' },
-  { os: 'win32', cpu: 'ia32', target: 'i686-pc-windows-msvc', label: 'Windows 32-bit' },
   { os: 'win32', cpu: 'arm64', target: 'aarch64-pc-windows-msvc', label: 'Windows ARM64' },
   { os: 'darwin', cpu: 'x64', target: 'x86_64-apple-darwin', label: 'macOS Intel' },
   { os: 'darwin', cpu: 'arm64', target: 'aarch64-apple-darwin', label: 'macOS Apple silicon' },
@@ -138,9 +137,10 @@ console.log(`built ${launcherName}`);
 
 if (publish) {
   // The system packages go first, so the launcher never points at a package that is missing.
-  // A beta is published as "latest" too: while there is no stable release, it is what
-  // `npm install -g sne-cli` should give.
+  // A stable release is "latest", what `npm install -g sne-cli` gives. A beta is "next", so it
+  // reaches only those who ask for it with `sne-cli@next`.
   // A package that is already on the registry is skipped, so a run that stopped can be repeated.
+  const tag = version.includes('-') ? 'next' : 'latest';
   for (const [folder, name] of [...packages.map((p) => [p, p]), ['sne', launcherName]]) {
     const there = await fetch(`https://registry.npmjs.org/${name}/${version}`);
     if (there.ok) {
@@ -148,7 +148,7 @@ if (publish) {
       continue;
     }
     // One string, run by the shell: on Windows npm is a .cmd file, which needs one.
-    execSync('npm publish --access public --tag latest', {
+    execSync(`npm publish --access public --tag ${tag}`, {
       cwd: path.join(dist, folder),
       stdio: 'inherit',
     });

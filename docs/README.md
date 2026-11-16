@@ -19,7 +19,10 @@ node -v
 * **Switching is one filesystem operation.** `sne use` moves a link. Your `PATH` never changes.
 * **It reads the files you already have.** `.nvmrc`, `.node-version` and `engines.node` in
   `package.json` all work.
-* **Verified installs.** Every download is checked against the SHA-256 published by nodejs.org.
+* **Verified installs.** Every download is checked against the SHA-256 published by nodejs.org, and an
+  install either completes or leaves nothing behind.
+* **Works behind company networks.** Proxies from `HTTPS_PROXY`, and certificates from your system's
+  store.
 * **No admin rights on Windows.** sne uses directory junctions, so Developer Mode is not needed.
 
 ## Where to go next

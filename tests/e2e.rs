@@ -332,10 +332,10 @@ fn self_check_reports_a_newer_release() {
     assert!(stdout.contains("sne 999.0.0 is available"), "{stdout}");
     assert_eq!(cached, "999.0.0");
 
-    // Tags with a leading `v` are understood too.
-    let (stdout, cached) = run("v999.1.0-beta.2");
-    assert!(stdout.contains("sne 999.1.0-beta.2 is available"), "{stdout}");
-    assert_eq!(cached, "999.1.0-beta.2");
+    // Tags with a leading `v` are understood too. (Which builds see betas is tested in update.rs.)
+    let (stdout, cached) = run("v999.1.0");
+    assert!(stdout.contains("sne 999.1.0 is available"), "{stdout}");
+    assert_eq!(cached, "999.1.0");
 
     let (stdout, _) = run("0.0.1");
     assert!(stdout.contains("is the latest version"), "{stdout}");
@@ -345,7 +345,6 @@ fn self_check_reports_a_newer_release() {
 fn release_target() -> Option<&'static str> {
     Some(match (std::env::consts::OS, std::env::consts::ARCH) {
         ("windows", "x86_64") => "x86_64-pc-windows-msvc",
-        ("windows", "x86") => "i686-pc-windows-msvc",
         ("windows", "aarch64") => "aarch64-pc-windows-msvc",
         ("macos", "x86_64") => "x86_64-apple-darwin",
         ("macos", "aarch64") => "aarch64-apple-darwin",

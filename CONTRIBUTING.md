@@ -97,7 +97,7 @@ built program. A pull request needs all of it green.
 | `tests/e2e.rs` | End-to-end tests against a fake mirror |
 | `install.ps1`, `install.sh` | One-line installers |
 | `installer/` | Windows setup wizard (Inno Setup) |
-| `packaging/` | Linux package definition (nfpm), AUR and winget files, `update-manifests.ps1` |
+| `packaging/` | Linux package definition (nfpm), winget files, `update-manifests.ps1` |
 | `npm/` | The npm launcher package and the script that builds the per-system packages |
 | `bucket/`, `Formula/` | Scoop manifest and Homebrew formula; this repository is the bucket and the tap |
 | `docs/` | User documentation, published with GitBook |
@@ -135,11 +135,14 @@ Write in short, plain sentences. Many readers are not native English speakers.
 
 | Branch | Purpose | Who can push |
 |---|---|---|
-| `develop` | Where all work lands first. Pull requests target it. | Maintainers only; everyone else through a pull request |
-| `main` | What is released. The install scripts and the website are served from it. | Maintainers only |
+| `develop` | Where all work lands first. Pull requests target it. | Nobody directly: everything goes through a pull request |
+| `main` | What is released. The install scripts and the website are served from it. | Nobody directly: `develop` is brought to it with a pull request |
 
-Both branches are protected. A pull request needs green checks and a maintainer's approval before
-it is merged.
+Both branches are protected: they cannot be deleted or force-pushed, and changes arrive only through a
+pull request. A pull request can be merged once these checks pass: `Test` on Linux (x64 and ARM),
+macOS and Windows, `Installer scripts`, and `Real install` on Linux, macOS and Windows. No approval is
+required, because the project has one maintainer, and GitHub does not let anyone approve their own
+pull request. A maintainer still reads every pull request before merging it.
 
 ## Releases
 
@@ -150,14 +153,13 @@ Maintainers make releases. For reference, the steps are:
 3. The Release workflow runs every check, builds the installers for every system and creates a draft
    release.
 4. Review the draft on GitHub and publish it. This starts the Publish workflow, which:
-   * publishes the crate to crates.io and the eight npm packages (the launcher `sne-cli` and one
+   * publishes the crate to crates.io and the seven npm packages (the launcher `sne-cli` and one
      package per system), if trusted publishing is set up (below);
    * opens a pull request to `develop` with the Scoop manifest (`bucket/`), the Homebrew formula
-     (`Formula/`), and the AUR and winget files (`packaging/`) for the new version, and starts CI and
+     (`Formula/`), and the winget files (`packaging/`) for the new version, and starts CI and
      the Packages workflow on it. Merge it, then bring `develop` to `main`: Scoop and Homebrew read
      `main`.
-5. Copy `packaging/aur/PKGBUILD` and `.SRCINFO` to the AUR repository of `sne-bin` and push it. Send
-   the folder under `packaging/winget/manifests/` as a pull request to `microsoft/winget-pkgs`.
+5. Send the folder under `packaging/winget/manifests/` as a pull request to `microsoft/winget-pkgs`.
 
 A published version cannot be changed on crates.io or npm.
 
@@ -171,7 +173,7 @@ sets this up once:
 
 1. **crates.io:** on the crate page of `sne`, **Settings**, **Trusted Publishing**, **Add**, GitHub:
    owner `sne-sh`, repository `sne`, workflow `publish.yml`, environment `release`.
-2. **npm:** for each of the eight packages (`sne-cli` and the seven `sne-<system>-<cpu>`), **Settings**,
+2. **npm:** for each of the seven packages (`sne-cli` and the six `sne-<system>-<cpu>`), **Settings**,
    **Trusted publishing**, GitHub Actions, with the same four values, and allow `npm publish`. npm drops
    a configuration that has not published within two days, so do this shortly before a release.
 3. **GitHub:** in **Settings**, **Secrets and variables**, **Actions**, **Variables**, set

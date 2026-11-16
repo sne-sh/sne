@@ -33,19 +33,37 @@ sne has no such program. The `node` on your `PATH` is the real Node.js.
 
 1. sne reads the list of releases from nodejs.org. The list is cached for one hour and downloaded
    again only when the server says it changed.
-2. It downloads the archive for your system and hashes it while it arrives.
+2. It downloads the archive for your system and hashes it while it arrives. A dropped connection or a
+   busy server is tried again twice, after half a second and after two seconds.
 3. On Linux and macOS, the archive is decompressed and unpacked as it downloads and is never written to
-   disk. On Windows, the zip is saved to a temporary file and unpacked on several threads.
+   disk. On Windows, the zip is saved to a temporary file, checked, and then unpacked on several threads.
 4. The files go into a temporary folder. Only after the SHA-256 matches the one in the server's
    `SHASUMS256.txt` is the folder renamed into place.
 
 Because of the last step, a cancelled or failed install never leaves a half-installed version.
+
+On Linux and macOS the files are unpacked before the checksum can be compared, so unpacking has to be
+safe for any archive, even a damaged or altered one. Links in the archive must point inside the
+temporary folder, nothing is ever written through a link, and setuid, setgid and sticky bits are
+dropped. Nothing can land outside the temporary folder, and a failed check deletes it.
+
+On Apple silicon and Windows on ARM, a version that has no ARM build is installed as its x64 build,
+which the system runs under emulation.
+
+## Uninstalling
+
+`sne uninstall` first renames the version's folder in one step, then deletes it. A rename either
+happens or changes nothing, so a version is never left half removed, even when a program still runs
+from it. Files that cannot be deleted yet are removed the next time sne installs or uninstalls.
 
 ## What a download is checked against
 
 * **Everything arrives over HTTPS.** sne refuses a plain `http://` address, and refuses a redirect from
   HTTPS to HTTP. The one exception is an address on your own machine (`127.0.0.1` or `localhost`),
   for a local mirror.
+* **Certificates are checked against your system's store**, like a browser does. A company that
+  inspects HTTPS adds its certificate there, and sne accepts it. See
+  [Configuration](configuration.md#proxies-and-company-certificates).
 * **The SHA-256 comes from the same server as the file.** It proves the file arrived complete and
   unchanged. It does not protect you if that server itself is taken over, because the attacker could
   replace both. sne does not check the signatures that the Node.js project publishes next to

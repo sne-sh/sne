@@ -61,7 +61,7 @@ changes:
 ## Windows Defender removed sne
 
 Windows Defender can report `Behavior:Win32/Persistence` and delete `sne.exe`. It reacts to an unsigned
-program that adds a scheduled task, which is what `sne notify on` does for the daily update check.
+program that adds a scheduled task, which is what `sne notify on` does for the update check.
 sne never adds that task without being asked.
 
 1. Open **Windows Security**, **Virus & threat protection**, **Protection history**.
@@ -97,6 +97,16 @@ sne use 22
 
 Some combinations do not exist on nodejs.org. The common case is 32-bit Windows, which has no builds
 after Node.js 22. Choose an older version.
+
+On Apple silicon and Windows on ARM, sne installs the x64 build instead when there is no ARM build,
+and says so. See [Apple silicon and Windows on ARM](../reference/configuration.md#apple-silicon-and-windows-on-arm).
+
+## Certificate errors behind a company network
+
+sne checks HTTPS certificates against your system's certificate store. If downloads fail with a
+certificate error, ask your IT department to install the company's certificate in the system store
+(on Linux, in the distribution's bundle, for example with `update-ca-certificates`). If you use a
+proxy, set `HTTPS_PROXY`.
 
 ## Checksum mismatch
 

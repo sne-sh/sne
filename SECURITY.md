@@ -41,6 +41,11 @@ Examples of what we want to hear about:
   `localhost`.
 - Project version files (`.nvmrc`, `.node-version`, `package.json`) are read only when they are
   small regular files, never through a link, and a version containing control characters is ignored.
+- On Linux and macOS the Node.js archive is unpacked while it downloads, before its SHA-256 can be
+  checked, into a temporary folder that becomes the version only after the check passes. So unpacking
+  is safe for any archive: links must point inside that folder, nothing is written through a link,
+  and setuid, setgid and sticky bits are dropped.
+- HTTPS certificates are checked against the system's certificate store.
 
 ## Check a download
 
@@ -55,5 +60,5 @@ by the release workflow of this repository from the tagged commit. With the
 [GitHub CLI](https://cli.github.com):
 
 ```sh
-gh attestation verify sne-0.1.0-beta.5-x64-setup.exe --repo sne-sh/sne
+gh attestation verify sne-0.1.0-x64-setup.exe --repo sne-sh/sne
 ```
