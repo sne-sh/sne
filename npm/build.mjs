@@ -82,7 +82,8 @@ const shared = {
   license: 'MIT',
 };
 const packages = [];
-// npm refuses the name "sne", so the launcher is published as sne-cli. Its command is still `sne`.
+// npm refuses the name "sne" (checked again on 2026-11-17: "You do not have permission to publish"),
+// so the launcher is published as sne-cli. Its command is still `sne`.
 const launcherName = JSON.parse(fs.readFileSync(path.join(here, 'sne', 'package.json'), 'utf8')).name;
 
 for (const system of systems) {
