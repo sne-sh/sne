@@ -165,6 +165,9 @@ InstallModes:
 - silent
 - silentWithProgress
 UpgradeBehavior: install
+# Only the PATH task: a silent install leaves the PowerShell profile and Task Scheduler alone.
+InstallerSwitches:
+  Custom: /TASKS=addtopath
 Commands:
 - sne
 ReleaseDate: {{DATE}}
