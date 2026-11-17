@@ -174,7 +174,8 @@ sets this up once:
 1. **crates.io:** on the crate page of `sne`, **Settings**, **Trusted Publishing**, **Add**, GitHub:
    owner `sne-sh`, repository `sne`, workflow `publish.yml`, environment `release`.
 2. **npm:** for each of the seven packages (`sne-cli` and the six `sne-<system>-<cpu>`), **Settings**,
-   **Trusted publishing**, GitHub Actions, with the same four values, and allow `npm publish`. npm drops
+   **Trusted publishing**, GitHub Actions, with the same four values, and under **Allowed actions** tick **Allow npm publish** (without it npm only allows
+   `npm stage publish`, and the workflow fails with "OIDC permission denied"). npm drops
    a configuration that has not published within two days, so do this shortly before a release.
 3. **GitHub:** in **Settings**, **Secrets and variables**, **Actions**, **Variables**, set
    `PUBLISH_CRATES` and `PUBLISH_NPM` to `true`. A job whose variable is not `true` is skipped.
