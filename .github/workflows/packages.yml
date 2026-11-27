@@ -78,7 +78,7 @@ jobs:
       HOMEBREW_NO_ANALYTICS: 1
     steps:
       - uses: actions/checkout@v7
-      - uses: Homebrew/actions/setup-homebrew@45a4e9b516547553decd9bc1056249c8f6a565a2 # main
+      - uses: Homebrew/actions/setup-homebrew@b4c226ae32acab42c7c2c0745ad224a1e9958022 # main
       - name: Install sne from the formula
         run: |
           version="$(sed -n 's/^  version "\(.*\)"$/\1/p' Formula/sne.rb)"
